@@ -394,6 +394,7 @@ body.dark .rt td{color:var(--tx)}
   #sb-overlay{display:none !important}
 }
 
+.siro-btn{padding:3px 7px !important;font-size:11px !important;line-height:1}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1712,6 +1713,30 @@ function bulkSil(){
 }
 
 // ---- Render Stok ----
+
+/* === AYNI RAF İÇİNDE SIRA YUKARI/AŞAĞI TAŞIMA === */
+function urunSiraTasi(id, yon){
+  /* yon: -1 yukarı, +1 aşağı */
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
+  if(!u)return;
+  /* Aynı dolap + aynı bölmedeki ürünleri, mevcut görünüm sırasına göre topla */
+  function bolmeNo(x){var b=(x&&x.bolme)?String(x.bolme):'';var m=b.match(/\d+/);return m?parseInt(m[0]):9999;}
+  var grup=db.urunler.filter(function(x){return (x.dolap||'')===(u.dolap||'') && String(x.bolme||'')===String(u.bolme||'');});
+  /* sira_dolap'a göre sırala (yoksa id) */
+  grup.sort(function(a,b){return (a.sira_dolap||a.id)-(b.sira_dolap||b.id);});
+  var idx=-1; for(var j=0;j<grup.length;j++){if(grup[j].id===id){idx=j;break;}}
+  if(idx<0)return;
+  var hedef=idx+yon;
+  if(hedef<0||hedef>=grup.length){toast(yon<0?'Zaten en üstte':'Zaten en altta');return;}
+  /* İki ürünün sira_dolap değerlerini takas et */
+  var a=grup[idx], b=grup[hedef];
+  var ta=a.sira_dolap||a.id, tb=b.sira_dolap||b.id;
+  a.sira_dolap=tb; b.sira_dolap=ta;
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}
+  sbUrunKaydetTek(a.id); sbUrunKaydetTek(b.id);
+  renderStok();
+}
+
 function renderStok(){
   const q=trkc(document.getElementById('search').value||'');
   const fd=document.getElementById('flt-d').value;
@@ -1772,8 +1797,10 @@ function renderStok(){
       '<td data-label="Bölme" style="font-size:12.5px">'+e(u.bolme||'—')+(u.loknot?'<div style="font-size:11px;color:var(--tx3)">'+e(u.loknot)+'</div>':'')+'</td>'+
       '<td data-label="Durum"><span class="pill '+d.c+'">'+d.l+'</span></td>'+
       '<td class="mob-acts"><div class="td-acts">'+
+        ((sc==='id'||sc==='dolap')?('<button class="btn btn-sm siro-btn" onclick="urunSiraTasi('+u.id+',-1)" title="Bir üst sıraya taşı">▲</button>'+
+        '<button class="btn btn-sm siro-btn" onclick="urunSiraTasi('+u.id+',1)" title="Bir alt sıraya taşı">▼</button>'):'')+
         '<button class="btn btn-sm btn-ed" onclick="openHarModal('+u.id+')" title="Hareket">📤</button>'+
-        '<button class="btn btn-sm btn-ed" onclick="openTasima('+u.id+')" title="Taşı">📦</button>'+
+        '<button class="btn btn-sm btn-ed" onclick="openTasima('+u.id+')" title="Taşı (dolap/raf)">📦</button>'+
         '<button class="btn btn-sm btn-ed" onclick="openUrunModal('+u.id+')" title="Düzenle">✏️</button>'+
         '<button class="btn btn-sm btn-del" onclick="konfirmSilUrun('+u.id+')" title="Sil">🗑</button>'+
       '</div></td></tr>';
