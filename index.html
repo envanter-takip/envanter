@@ -1729,11 +1729,20 @@ function renderStok(){
   // Dolap sırasını bul
   const dolapSira={};
   db.dolaplar.forEach(d=>dolapSira[d.ad]=(d.sira||99));
+  /* Bölme/raf değerinden sayı çıkar ("1. Raf" -> 1); sayı yoksa metne göre sırala */
+  function bolmeNo(x){
+    var b=(x&&x.bolme)?String(x.bolme):'';
+    var m=b.match(/\d+/);
+    return m?parseInt(m[0]):9999; /* bölmesizler en sona */
+  }
   list.sort((a,b)=>{
-    // Önce daima dolap sırasına göre
+    // 1) Önce daima dolap sırasına göre
     const da=dolapSira[a.dolap||'']||99, db2=dolapSira[b.dolap||'']||99;
     if(da!==db2) return da-db2;
-    // Sonra dolap içi sıra
+    // 2) Sonra bölme/raf sırasına göre (1. Raf, 2. Raf ...)
+    const ba=bolmeNo(a), bb=bolmeNo(b);
+    if(ba!==bb) return ba-bb;
+    // 3) Aynı raf içinde: seçilen sıralama ölçütü
     if(sc==='id'||sc==='dolap'){
       return ((a.sira_dolap||a.id)-(b.sira_dolap||b.id))*sd;
     }
