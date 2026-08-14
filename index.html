@@ -793,7 +793,7 @@ body.dark .rt td{color:var(--tx)}
     <p>Geri alınmak üzere geçici verilen malzeme/ekipmanları takip edersiniz. Kime verildiği, veriliş ve tahmini iade tarihi kaydedilir. İstenirse stoktan düşülür. Malzeme dönünce <b>✅ İade</b> butonuyla kapatırsınız (stoktan düşülmüşse geri eklenir). İade tarihi geçenler kırmızı uyarıyla gösterilir. "Kişide Olanlar" listesiyle her an kimde ne olduğunu görürsünüz.</p>
 
     <div style="font-weight:700;margin:16px 0 6px;color:var(--blu)">🔢 Envanter Sayımı</div>
-    <p>Fiziksel sayım yaparken kullanın. Tüm depoyu veya seçtiğiniz dolabı/rafı sayabilirsiniz. Her ürünün sistemdeki miktarı görünür; yanına gerçek sayılan miktarı girersiniz. Program <b>farkı otomatik hesaplar</b> (eksik kırmızı, fazla mavi). Sayım bitince <b>✅ Farkları Düzelt</b> ile, onayınızın ardından stok miktarları gerçek sayıma göre güncellenir; her düzeltme işlem kaydına (log) yazılır.</p>
+    <p>Fiziksel sayım yaparken kullanın. Tüm depoyu veya seçtiğiniz dolabı/rafı sayabilirsiniz. Her ürünün sistemdeki miktarı görünür; yanına gerçek sayılan miktarı girersiniz. Program <b>farkı otomatik hesaplar</b> (eksik kırmızı, fazla mavi). Sayım bitince <b>✅ Farkları Düzelt</b> ile, onayınızın ardından stok miktarları gerçek sayıma göre güncellenir; her düzeltme işlem kaydına (log) yazılır. Sayım <b>otomatik olarak bulutta kaydedilir</b>: tarayıcıyı kapatsanız bile kaldığınız yerden devam edebilir, sayımı günlere yayabilir ve ekipçe birlikte sayabilirsiniz.</p>
 
     <div style="font-weight:700;margin:16px 0 6px;color:var(--blu)">📱 QR Kod & Etiket</div>
     <p>Dolap &amp; Bölme sayfasında her dolabın <b>📱 QR</b> butonuyla, o dolap ve rafları için QR kod üretebilirsiniz. Etiketleri yazdırıp dolaplara/raflara yapıştırın. Telefon kameranızla okuttuğunuzda, o dolabın veya rafın ürünleri programda otomatik filtrelenmiş olarak açılır — sahada hızlı erişim sağlar.</p>
@@ -1132,6 +1132,30 @@ body.dark .rt td{color:var(--tx)}
       <button class="btn btn-p" onclick="sayimFarklariUygula()">✅ Farkları Düzelt</button>
     </div>
   </div>
+</div></div>
+
+<div class="ov" id="m-odunc-duz" style="z-index:8600"><div class="modal" style="max-width:480px">
+  <div class="mh"><h3>✏️ Ödünç Kaydını Düzenle</h3><button class="mx" onclick="CM('m-odunc-duz')">&#215;</button></div>
+  <div class="mb">
+    <input type="hidden" id="odz-id">
+    <div class="f" style="margin-bottom:11px"><label>Malzeme / Ekipman</label>
+      <input id="odz-ad" style="width:100%"></div>
+    <div style="display:flex;gap:10px;margin-bottom:11px">
+      <div class="f" style="flex:1"><label>Adet</label>
+        <input type="number" id="odz-mik" min="1" style="width:100%"></div>
+      <div class="f" style="flex:2"><label>Kime Verildi</label>
+        <input id="odz-kisi" style="width:100%"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:11px">
+      <div class="f" style="flex:1"><label>Veriliş Tarihi</label>
+        <input type="date" id="odz-ver" style="width:100%"></div>
+      <div class="f" style="flex:1"><label>Tahmini İade</label>
+        <input type="date" id="odz-iade" style="width:100%"></div>
+    </div>
+    <div class="f" style="margin-bottom:4px"><label>Not</label>
+      <input id="odz-not" style="width:100%" placeholder="Açıklama (opsiyonel)"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-odunc-duz')">Vazgeç</button><button class="btn btn-p" onclick="oduncDuzenleKaydet()">💾 Kaydet</button></div>
 </div></div>
 
 <!-- KONFIRM -->
@@ -5262,6 +5286,53 @@ function oduncSil(id){
   oduncRender();
   toast('🗑 Kayıt silindi');
 }
+
+function oduncDuzenleAc(id){
+  var k=null; for(var i=0;i<db.odunc.length;i++){if(db.odunc[i].id===id){k=db.odunc[i];break;}}
+  if(!k)return;
+  document.getElementById('odz-id').value=k.id;
+  document.getElementById('odz-ad').value=k.ad||'';
+  document.getElementById('odz-mik').value=k.mik||1;
+  document.getElementById('odz-kisi').value=k.kisi||'';
+  document.getElementById('odz-ver').value=k.ver||'';
+  document.getElementById('odz-iade').value=k.iade||'';
+  document.getElementById('odz-not').value=k.not||'';
+  OM('m-odunc-duz');
+}
+function oduncDuzenleKaydet(){
+  var id=parseInt(document.getElementById('odz-id').value);
+  var k=null; for(var i=0;i<db.odunc.length;i++){if(db.odunc[i].id===id){k=db.odunc[i];break;}}
+  if(!k)return;
+  var ad=document.getElementById('odz-ad').value.trim();
+  var kisi=document.getElementById('odz-kisi').value.trim();
+  if(!ad){toast('Malzeme adı boş olamaz!');return;}
+  if(!kisi){toast('Kime verildiği boş olamaz!');return;}
+  var eskiMik=k.mik;
+  var yeniMik=parseInt(document.getElementById('odz-mik').value)||1;
+  /* Stoktan düşülmüş bir kayıtsa ve miktar değiştiyse, stok farkını uygula */
+  if(k.stokDus && k.stokId && k.durum==='kiside' && yeniMik!==eskiMik){
+    var u=null; for(var j=0;j<db.urunler.length;j++){if(db.urunler[j].id===k.stokId){u=db.urunler[j];break;}}
+    if(u){
+      var fark=yeniMik-eskiMik; /* pozitifse daha çok düşülecek */
+      if(fark>0 && kalan(u)<fark){toast('⚠️ Stokta yeterli yok! (kalan: '+kalan(u)+')');return;}
+      u.cikan=(u.cikan||0)+fark;
+      sbUrunKaydetTek(u.id);
+    }
+  }
+  k.ad=ad;
+  k.mik=yeniMik;
+  k.kisi=kisi;
+  k.ver=document.getElementById('odz-ver').value;
+  k.iade=document.getElementById('odz-iade').value;
+  k.not=document.getElementById('odz-not').value.trim();
+  oduncKaydet();
+  logEkle('hareket','Ödünç kaydı düzenlendi: '+ad+' ('+kisi+')');
+  CM('m-odunc-duz');
+  renderStok();
+  oduncRender();
+  toast('✅ Kayıt güncellendi');
+}
+
 function oduncKaydet(){
   try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}
   sbAyarKaydet();
@@ -5314,6 +5385,7 @@ function oduncRender(){
         +'<td data-label="Durum">'+durumBadge+'</td>'
         +'<td class="mob-acts" style="text-align:center;white-space:nowrap">';
       if(k.durum==='kiside')h+='<button class="btn btn-sm btn-p" onclick="oduncIadeEt('+k.id+')" title="İade al">✅ İade</button> ';
+      h+='<button class="btn btn-sm btn-ed" onclick="oduncDuzenleAc('+k.id+')" title="Düzenle">✏️</button> ';
       h+='<button class="btn btn-sm btn-del" onclick="oduncSil('+k.id+')" title="Sil">🗑</button>'
         +'</td></tr>';
     }
