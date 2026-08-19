@@ -1108,6 +1108,7 @@ body.dark .rt td{color:var(--tx)}
           <label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:3px">Raf (boş = tümü)</label>
           <select id="sy-raf" onchange="sayimBaslat()" style="width:100%;height:34px;padding:0 9px;border:1px solid var(--brd);border-radius:var(--rsm);font-size:13px;font-family:inherit;background:var(--sur)"><option value="">Tüm Raflar</option></select>
         </div>
+        <button class="btn" onclick="sayimTumunuEsitle()" title="Görünen tüm ürünleri sistemdeki değerle eşitle (sadece farklı olanları elle düzeltirsiniz)">⚡ Tümünü Sistemdekiyle Eşitle</button>
         <button class="btn" onclick="sayimTemizle()" title="Tüm sayım kayıtlarını sil, sıfırdan başla">🗑 Sayımı Sıfırla</button>
       </div>
     </div>
@@ -4904,6 +4905,18 @@ function talepPdf(){
 /* Sayım verileri db.sayim içinde bulutta saklanır: {urunId: sayilanMiktar}.
    Böylece tarayıcı kapansa da kaldığınız yerden devam edersiniz, ekip birlikte sayabilir. */
 
+
+function sayimTumunuEsitle(){
+  var list=sayimListesi();
+  if(!list.length){toast('Listede ürün yok');return;}
+  if(!confirm(list.length+' ürünün sayılan değeri, sistemdeki mevcut değerle eşitlenecek.\n\nSadece gerçekten farklı olanları elle düzeltirsiniz.\n\nDevam edilsin mi?'))return;
+  var sv=sayimVeriGet();
+  list.forEach(function(u){ sv[u.id]=kalan(u); sayimOtomatikSet[u.id]=true; });
+  sayimBaslat();
+  sayimKaydet();
+  toast('✅ '+list.length+' ürün sistemdekiyle eşitlendi — farklı olanları düzeltin');
+}
+
 function sayimHemenKaydet(){
   if(_sayimKayitZaman){clearTimeout(_sayimKayitZaman);_sayimKayitZaman=null;}
   try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}
@@ -4920,6 +4933,7 @@ function sayimHemenKaydet(){
 }
 
 function sayimVeriGet(){ if(!db.sayim)db.sayim={}; return db.sayim; }
+var sayimOtomatikSet={}; /* {urunId:true} - "tümünü eşitle" ile otomatik dolanlar (sadece görsel uyarı için, oturum bazlı) */
 var _sayimKayitZaman=null;
 function sayimKaydet(){
   /* Yerel + buluta kaydet (çok sık yazmayı önlemek için 600ms debounce) */
@@ -4972,11 +4986,12 @@ function sayimBaslat(){
     var u=list[i];
     var sis=kalan(u);
     var say=(sv[u.id]!==undefined)?sv[u.id]:'';
+    var oto=!!sayimOtomatikSet[u.id];
     h+='<tr>'
       +'<td data-label="Ürün" style="font-weight:600">'+e(u.ad)+(u.marka?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(u.marka)+'</div>':'')+'</td>'
       +'<td data-label="Yeri" style="font-size:12px;color:var(--tx2)">'+e(u.dolap||'—')+(u.bolme?' / '+e(u.bolme):'')+'</td>'
       +'<td data-label="Sistemdeki" style="text-align:center;font-weight:700">'+sis+'</td>'
-      +'<td data-label="Sayılan" style="text-align:center"><input type="number" min="0" value="'+say+'" onchange="sayimGir('+u.id+',this.value)" oninput="sayimGir('+u.id+',this.value)" style="width:80px;height:32px;text-align:center;border:1px solid var(--brd);border-radius:6px;font-size:14px;font-family:inherit;background:var(--sur)"></td>'
+      +'<td data-label="Sayılan" style="text-align:center"><input type="number" min="0" value="'+say+'" onchange="sayimGir('+u.id+',this.value)" oninput="sayimGir('+u.id+',this.value)" title="'+(oto?'Otomatik eşitlendi, sayılmadı — gerçek sayıyı girmek isterseniz düzeltin':'')+'" style="width:80px;height:32px;text-align:center;border:1px solid '+(oto?'#e0b84a':'var(--brd)')+';border-radius:6px;font-size:14px;font-family:inherit;background:'+(oto?'var(--amb-bg,#fff8e6)':'var(--sur)')+'">'+(oto?'<div style="font-size:9.5px;color:#a8790a;margin-top:2px">otomatik</div>':'')+'</td>'
       +'<td data-label="Fark" style="text-align:center" id="sy-fark-'+u.id+'">'+sayimFarkHtml(u.id,sis)+'</td>'
       +'</tr>';
   }
@@ -4993,6 +5008,7 @@ function sayimFarkHtml(id,sis){
 }
 function sayimGir(id,deger){
   var sv=sayimVeriGet();
+  delete sayimOtomatikSet[id]; /* elle dokunulunca "otomatik" işareti kalkar, gerçek sayım sayılır */
   if(deger===''||deger===null){delete sv[id];}
   else{sv[id]=parseInt(deger)||0;}
   var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
@@ -5003,21 +5019,24 @@ function sayimGir(id,deger){
 function sayimOzetGuncelle(){
   var sv=sayimVeriGet();
   var list=sayimListesi();
-  var sayilan=0, farkli=0, tam=0;
+  var sayilan=0, farkli=0, tam=0, otomatikSayi=0;
   list.forEach(function(u){
     if(sv[u.id]!==undefined && sv[u.id]!==''){
       sayilan++;
+      if(sayimOtomatikSet[u.id])otomatikSayi++;
       var fark=parseInt(sv[u.id])-kalan(u);
       if(fark===0)tam++; else farkli++;
     }
   });
   var kalanSay=list.length-sayilan;
+  var gercekSayilan=sayilan-otomatikSayi;
   document.getElementById('sy-ozet').innerHTML=
     sayimKart('Toplam Ürün',list.length,'var(--tx2)')
     +sayimKart('Sayılan',sayilan,'var(--blu)')
     +sayimKart('Farklı',farkli,farkli>0?'var(--red)':'var(--tx2)')
-    +sayimKart('Sayılmayan',kalanSay,'var(--tx3)');
-  document.getElementById('sy-durum').textContent=farkli>0?(farkli+' üründe fark var'):(sayilan>0?'Sayılanlar tam ✓':'Sayıma başlayın');
+    +sayimKart('Sayılmayan',kalanSay,'var(--tx3)')
+    +(otomatikSayi>0?sayimKart('⚡ Otomatik',otomatikSayi,'#c99a2e'):'');
+  document.getElementById('sy-durum').textContent=(otomatikSayi>0?(otomatikSayi+' ürün otomatik eşitlendi (gerçekte sayılmadı). '):'')+(farkli>0?(farkli+' üründe fark var'):(sayilan>0?'Sayılanlar tam ✓':'Sayıma başlayın'));
 }
 function sayimKart(baslik,deger,renk){
   return '<div style="flex:1;min-width:110px;background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:10px 12px;text-align:center">'
