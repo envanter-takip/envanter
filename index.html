@@ -1129,6 +1129,7 @@ body.dark .rt td{color:var(--tx)}
     <div style="font-size:12px;color:var(--tx3)" id="sy-durum"></div>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="sayimKapat()">Kapat</button>
+      <button class="btn" onclick="sayimHemenKaydet()" title="Şu ana kadar girdiğiniz sayımları hemen buluta gönder">💾 Kaydet</button>
       <button class="btn btn-p" onclick="sayimFarklariUygula()">✅ Farkları Düzelt</button>
     </div>
   </div>
@@ -4902,6 +4903,22 @@ function talepPdf(){
 /* === ENVANTER SAYIMI === */
 /* Sayım verileri db.sayim içinde bulutta saklanır: {urunId: sayilanMiktar}.
    Böylece tarayıcı kapansa da kaldığınız yerden devam edersiniz, ekip birlikte sayabilir. */
+
+function sayimHemenKaydet(){
+  if(_sayimKayitZaman){clearTimeout(_sayimKayitZaman);_sayimKayitZaman=null;}
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}
+  var list=sayimListesi();
+  var dolapAd=document.getElementById('sy-dolap').value;
+  var rafAd=document.getElementById('sy-raf').value;
+  var yer=dolapAd?(dolapAd+(rafAd?' / '+rafAd:'')):'Tüm depo';
+  var sv=sayimVeriGet();
+  var sayilanBu=0; list.forEach(function(u){if(sv[u.id]!==undefined&&sv[u.id]!=='')sayilanBu++;});
+  sbUpsert('ayarlar',[{key:'sayim',data:db.sayim||{},updated_at:new Date().toISOString()}],function(err){
+    if(err){ toast('⚠️ Kaydedilemedi! İnternet bağlantınızı kontrol edin.',4500); }
+    else{ toast('✅ Kaydedildi — '+yer+' ('+sayilanBu+'/'+list.length+' sayıldı)',3000); }
+  });
+}
+
 function sayimVeriGet(){ if(!db.sayim)db.sayim={}; return db.sayim; }
 var _sayimKayitZaman=null;
 function sayimKaydet(){
