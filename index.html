@@ -4502,9 +4502,17 @@ function saveHar(){
   if(!uid){toast('❗ Ürün seçin!');return;}
   if(mik<0){toast('❗ Geçerli miktar!');return;}
   const u=db.urunler.find(x=>x.id===uid);
+  var oncekiKalan=kalan(u);
   if(tip==='cikan'){if(mik>kalan(u)){toast('❗ Kalan stoktan fazla! Kalan: '+kalan(u));return;}u.cikan=(u.cikan||0)+mik;}
   else if(tip==='giris'){u.mevcut+=mik;}
   else{u.mevcut=mik+(u.cikan||0);}
+  /* Bekleyen bir sayım değeri varsa, bu meşru hareketin farkı kadar onu da kaydır ki
+     "sayım sonra eskidi, sahte fark gösterdi" durumu oluşmasın. */
+  if(db.sayim && db.sayim[uid]!==undefined && db.sayim[uid]!==''){
+    var yeniKalan=kalan(u);
+    var delta=yeniKalan-oncekiKalan;
+    db.sayim[uid]=Math.max(0,parseInt(db.sayim[uid])+delta);
+  }
   db.hareketler.push({id:db.nextHarId++,urunId:uid,tip,miktar:mik,tarih:document.getElementById('hf-tar').value,aciklama:document.getElementById('hf-ac').value.trim(),yapan:document.getElementById('hf-yp').value.trim(),ts:Date.now()});
   logEkle('hareket',(tip==='cikan'?'ÇIKIŞ':tip==='giris'?'GİRİŞ':'DÜZELTME')+': '+mik+' '+(u?u.birim:'')+' - '+(u?u.ad:''));
   try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
@@ -4845,7 +4853,11 @@ function talepCikisYap(idx){
   var eden=document.getElementById('tlp-eden').value.trim()||'';
   if(!confirm(t.mik+' '+(u.birim||'')+' '+u.ad+' stoktan çıkışı yapılacak'+(eden?' (talep eden: '+eden+')':'')+'. Onaylıyor musunuz?'))return;
   /* Stok çıkışı + hareket kaydı */
+  var oncekiKalan2=kalan(u);
   u.cikan=(u.cikan||0)+t.mik;
+  if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
+    db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+(kalan(u)-oncekiKalan2));
+  }
   var bugun=new Date();var tarStr=bugun.getFullYear()+'-'+String(bugun.getMonth()+1).padStart(2,'0')+'-'+String(bugun.getDate()).padStart(2,'0');
   db.hareketler.push({id:db.nextHarId++,urunId:u.id,tip:'cikan',miktar:t.mik,tarih:tarStr,aciklama:'Talep listesinden çıkış'+(eden?' - '+eden:''),yapan:eden||(ME?ME.ad:''),ts:Date.now()});
   t.durum='karsilandi';
@@ -5275,7 +5287,11 @@ function oduncEkle(){
     var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===stokId){u=db.urunler[i];break;}}
     if(u){
       if(kalan(u)<mik){toast('⚠️ Stokta yeterli yok! (kalan: '+kalan(u)+')');return;}
+      var oncekiKalan3=kalan(u);
       u.cikan=(u.cikan||0)+mik;
+      if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
+        db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+(kalan(u)-oncekiKalan3));
+      }
       sbUrunKaydetTek(u.id);
     }
   }
@@ -5307,7 +5323,14 @@ function oduncIadeEt(id){
   /* Stoktan düşülmüşse geri ekle */
   if(k.stokDus && k.stokId){
     var u=null; for(var j=0;j<db.urunler.length;j++){if(db.urunler[j].id===k.stokId){u=db.urunler[j];break;}}
-    if(u){u.cikan=Math.max(0,(u.cikan||0)-k.mik);sbUrunKaydetTek(u.id);}
+    if(u){
+      var oncekiKalan4=kalan(u);
+      u.cikan=Math.max(0,(u.cikan||0)-k.mik);
+      if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
+        db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+(kalan(u)-oncekiKalan4));
+      }
+      sbUrunKaydetTek(u.id);
+    }
   }
   oduncKaydet();
   logEkle('hareket','İADE alındı: '+k.mik+' '+k.ad+' ← '+k.kisi);
