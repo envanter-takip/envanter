@@ -632,6 +632,7 @@ body.dark .rt td{color:var(--tx)}
       <div class="f"><label>Barkod/SKU</label><input id="fu-sku" placeholder=""></div>
       <div class="f"><label>Tedarikçi</label><input id="fu-ted" placeholder=""></div>
     </div>
+    <div class="f" style="margin-bottom:10px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600"><input type="checkbox" id="fu-demirbas" style="width:16px;height:16px"> 🏷 Demirbaş Kaynaklı<span style="font-weight:400;color:var(--tx3);font-size:11.5px">(taşınırdan devralınan ürün)</span></label></div>
     <div class="f"><label>Notlar</label><textarea id="fu-not" placeholder=""></textarea></div>
   </div>
   <div class="mf"><button class="btn" onclick="CM('m-u')">İptal</button><button class="btn btn-p" onclick="saveUrun()">💾 Kaydet</button></div>
@@ -4199,7 +4200,7 @@ function renderStok(){
     const d=durum(u);const k=kalan(u);const sel=secilenler.has(u.id);
     return '<tr data-id="'+u.id+'">'+
       '<td class="mob-check"><input type="checkbox"'+(sel?' checked':'')+' onclick="toggleRow('+u.id+',this)"></td>'+
-      '<td data-label="Ürün"><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
+      '<td data-label="Ürün"><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+(u.demirbas?' <span style="display:inline-block;background:#efe4fb;color:#7c3aed;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:8px;vertical-align:middle" title="Taşınırdan devralınan demirbaş kaynaklı ürün">🏷 Demirbaş</span>':'')+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
       '<td data-label="Marka" style="color:var(--tx2);font-size:12.5px">'+e(u.marka||'—')+'</td>'+
       '<td data-label="Birim" style="font-size:13px">'+e(u.birim)+'</td>'+
       '<td data-label="Kategori">'+kChip(u.kat||'Diğer')+'</td>'+
@@ -4360,6 +4361,7 @@ function openUrunModal(id=null){
     document.getElementById('fu-sku').value=u.sku||'';
     document.getElementById('fu-ted').value=u.tedarik||'';
     document.getElementById('fu-not').value=u.not||'';
+    document.getElementById('fu-demirbas').checked=!!u.demirbas;
     selDur(u.durum_tip||'normal');
   } else {
     document.getElementById('m-u-t').textContent='Yeni Ürün';
@@ -4369,6 +4371,7 @@ function openUrunModal(id=null){
     document.getElementById('fu-min').value=0;
     document.getElementById('fu-dolap').value='';
     document.getElementById('fu-bolme').innerHTML='<option value="">— Dolap seçin —</option>';
+    document.getElementById('fu-demirbas').checked=false;
     selDur('normal');
   }
   OM('m-u');setTimeout(()=>document.getElementById('fu-ad').focus(),60);
@@ -4408,6 +4411,7 @@ function saveUrun(){
     tedarik:document.getElementById('fu-ted').value.trim(),
     not:document.getElementById('fu-not').value.trim(),
     durum_tip:secilenDur,
+    demirbas:document.getElementById('fu-demirbas').checked,
   };
   var kayitId;
   if(editUID){
