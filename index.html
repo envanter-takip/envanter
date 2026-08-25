@@ -515,6 +515,9 @@ body.dark .rt td{color:var(--tx)}
           <option value="one">Önemsiz</option>
           <option value="say">Sayılmamış</option>
         </select>
+        <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#7c3aed" title="Sadece demirbaş kaynaklı ürünleri göster">
+          <input type="checkbox" id="flt-demirbas" onchange="renderStok()" style="width:15px;height:15px;accent-color:#7c3aed"> 🏷 Sadece Demirbaş
+        </label>
         <div class="sp"></div>
         <button class="btn" onclick="openHarModal(null)">📤 Stok Hareketi</button>
       </div>
@@ -4157,11 +4160,13 @@ function renderStok(){
   const fb=(document.getElementById('flt-b')||{value:''}).value;
   const fk=document.getElementById('flt-k').value;
   const fdur=document.getElementById('flt-dur').value;
+  const fdemirbas=document.getElementById('flt-demirbas').checked;
   let list=db.urunler.filter(u=>{
     if(fd&&u.dolap!==fd)return false;
     if(fb&&String(u.bolme||'')!==fb)return false;
     if(fk&&u.kat!==fk)return false;
     if(fdur&&durum(u).k!==fdur)return false;
+    if(fdemirbas&&!u.demirbas)return false;
     if(q){const h=trkc([u.ad,u.marka,u.dolap,u.bolme,u.sku,u.kat].join(' '));if(!h.includes(q))return false;}
     return true;
   });
