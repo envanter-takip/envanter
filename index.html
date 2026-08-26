@@ -4211,7 +4211,7 @@ function renderStok(){
     const d=durum(u);const k=kalan(u);const sel=secilenler.has(u.id);
     return '<tr data-id="'+u.id+'">'+
       '<td class="mob-check"><input type="checkbox"'+(sel?' checked':'')+' onclick="toggleRow('+u.id+',this)"></td>'+
-      '<td data-label="Ürün"><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+(u.demirbas?' <span style="display:inline-block;background:#efe4fb;color:#7c3aed;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:8px;vertical-align:middle" title="Taşınırdan devralınan demirbaş kaynaklı ürün">🏷 Demirbaş</span>':'')+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
+      '<td data-label="Ürün"><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+(u.demirbas?' <span style="color:#dc2626;font-weight:700;font-size:12.5px" title="Taşınırdan devralınan demirbaş kaynaklı ürün">(Demirbaş)</span>':'')+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
       '<td data-label="Marka" style="color:var(--tx2);font-size:12.5px">'+e(u.marka||'—')+'</td>'+
       '<td data-label="Birim" style="font-size:13px">'+e(u.birim)+'</td>'+
       '<td data-label="Kategori">'+kChip(u.kat||'Diğer')+'</td>'+
