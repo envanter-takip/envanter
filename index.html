@@ -259,6 +259,8 @@ body.dark .lg-btn2{background:#1f2127}
 
 
 /* Stok uyarısı satır yanıp sönme */
+@keyframes blinkDemirbas{0%,100%{opacity:1}50%{opacity:.35}}
+.demirbas-blink{color:#dc2626;font-weight:700;font-size:12.5px;animation:blinkDemirbas 1.6s ease-in-out infinite}
 @keyframes blinkOut{0%,100%{background:#1e6e4a;color:#fff}50%{background:inherit;color:inherit}}
 @keyframes blinkOutDark{0%,100%{background:#c0392b;color:#fff}50%{background:inherit;color:inherit}}
 @keyframes blinkLow{0%,100%{background:#f5c518;color:#1a1a18}50%{background:inherit;color:inherit}}
@@ -515,8 +517,8 @@ body.dark .rt td{color:var(--tx)}
           <option value="one">Önemsiz</option>
           <option value="say">Sayılmamış</option>
         </select>
-        <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#7c3aed" title="Sadece demirbaş kaynaklı ürünleri göster">
-          <input type="checkbox" id="flt-demirbas" onchange="renderStok()" style="width:15px;height:15px;accent-color:#7c3aed"> 🏷 Sadece Demirbaş
+        <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#dc2626" title="Sadece demirbaş kaynaklı ürünleri göster">
+          <input type="checkbox" id="flt-demirbas" onchange="renderStok()" style="width:15px;height:15px;accent-color:#dc2626"> 🏷 Sadece Demirbaş
         </label>
         <div class="sp"></div>
         <button class="btn" onclick="openHarModal(null)">📤 Stok Hareketi</button>
@@ -4211,7 +4213,7 @@ function renderStok(){
     const d=durum(u);const k=kalan(u);const sel=secilenler.has(u.id);
     return '<tr data-id="'+u.id+'">'+
       '<td class="mob-check"><input type="checkbox"'+(sel?' checked':'')+' onclick="toggleRow('+u.id+',this)"></td>'+
-      '<td data-label="Ürün"><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+(u.demirbas?' <span style="color:#dc2626;font-weight:700;font-size:12.5px" title="Taşınırdan devralınan demirbaş kaynaklı ürün">(Demirbaş)</span>':'')+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
+      '<td data-label="Ürün"><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+(u.demirbas?' <span class="demirbas-blink" title="Taşınırdan devralınan demirbaş kaynaklı ürün">(Demirbaş)</span>':'')+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
       '<td data-label="Marka" style="color:var(--tx2);font-size:12.5px">'+e(u.marka||'—')+'</td>'+
       '<td data-label="Birim" style="font-size:13px">'+e(u.birim)+'</td>'+
       '<td data-label="Kategori">'+kChip(u.kat||'Diğer')+'</td>'+
