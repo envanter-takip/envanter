@@ -259,6 +259,8 @@ body.dark .lg-btn2{background:#1f2127}
 
 
 /* Stok uyarısı satır yanıp sönme */
+.talep-badge{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;background:#dc2626;color:#fff;font-size:11px;font-weight:800;border-radius:10px;margin-left:6px;vertical-align:middle;animation:blinkTalep 1.3s ease-in-out infinite}
+@keyframes blinkTalep{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.92)}}
 @keyframes blinkDemirbas{0%,100%{opacity:1}50%{opacity:.35}}
 .demirbas-blink{color:#dc2626;font-weight:700;font-size:12.5px;animation:blinkDemirbas 1.6s ease-in-out infinite}
 @keyframes blinkOut{0%,100%{background:#1e6e4a;color:#fff}50%{background:inherit;color:inherit}}
@@ -456,7 +458,7 @@ body.dark .rt td{color:var(--tx)}
   <div class="sb-a" onclick="showPage('kullanici')" id="nav-ku" style="display:none">👥 Kullanıcılar</div>
 
   <div class="sb-sec">Listeler &amp; İşlemler</div>
-  <div class="sb-a" onclick="talepAc()">📝 Malzeme Talep Listesi</div>
+  <div class="sb-a" onclick="talepAc()" style="position:relative">📝 Malzeme Talep Listesi <span id="talep-badge" class="talep-badge" style="display:none"></span></div>
   <div class="sb-a" onclick="alimAc()">🛒 Malzeme Alım Listesi</div>
   <div class="sb-a" onclick="oduncAc()">🔄 Ödünç / Geçici Verilenler</div>
   <div class="sb-a" onclick="sayimAc()">🔢 Envanter Sayımı</div>
@@ -971,6 +973,8 @@ body.dark .rt td{color:var(--tx)}
           <select id="alm-birim" style="width:100%;height:34px;padding:0 6px;border:1px solid var(--brd);border-radius:var(--rsm);font-size:13px;font-family:inherit;background:var(--sur)">
             <option>Adet</option><option>Paket</option><option>Kutu</option><option>Metre</option><option>Kilo</option><option>Litre</option><option>Top</option><option>Rulo</option><option>Çift</option><option>Takım</option>
           </select></div>
+        <div style="width:100px"><label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:3px">Birim Fiyat</label>
+          <input id="alm-fiyat" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;height:34px;padding:0 9px;border:1px solid var(--brd);border-radius:var(--rsm);font-size:13px;font-family:inherit;outline:none;background:var(--sur)"></div>
         <div style="flex:1;min-width:140px"><label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:3px">Açıklama / Not</label>
           <input id="alm-not" placeholder="Opsiyonel" style="width:100%;height:34px;padding:0 9px;border:1px solid var(--brd);border-radius:var(--rsm);font-size:13px;font-family:inherit;outline:none;background:var(--sur)"></div>
         <button class="btn btn-p" onclick="alimEkle()" style="height:34px">+ Ekle</button>
@@ -981,13 +985,16 @@ body.dark .rt td{color:var(--tx)}
       <thead><tr>
         <th style="width:50px;text-align:center">SIRA</th>
         <th>MALZEME ADI VE ÖZELLİKLERİ</th>
-        <th style="width:80px;text-align:right">MİKTAR</th>
-        <th style="width:90px">BİRİM</th>
+        <th style="width:70px;text-align:right">MİKTAR</th>
+        <th style="width:80px">BİRİM</th>
+        <th style="width:90px;text-align:right">B.FİYAT</th>
+        <th style="width:100px;text-align:right">TOPLAM</th>
         <th>AÇIKLAMA</th>
-        <th style="width:50px;text-align:center">SİL</th>
+        <th style="width:80px;text-align:center">İŞLEM</th>
       </tr></thead>
       <tbody id="alm-tbody"></tbody>
     </table>
+    <div id="alm-genel-toplam" style="text-align:right;font-weight:700;font-size:14px;margin-bottom:10px;color:var(--tx2)"></div>
     <div id="alm-bos" style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">Henüz malzeme eklenmedi. Yukarıdan ekleyin.</div>
   </div>
   <div class="mf" style="justify-content:space-between">
@@ -1164,6 +1171,28 @@ body.dark .rt td{color:var(--tx)}
       <input id="odz-not" style="width:100%" placeholder="Açıklama (opsiyonel)"></div>
   </div>
   <div class="mf"><button class="btn" onclick="CM('m-odunc-duz')">Vazgeç</button><button class="btn btn-p" onclick="oduncDuzenleKaydet()">💾 Kaydet</button></div>
+</div></div>
+
+<div class="ov" id="m-alim-duz" style="z-index:8600"><div class="modal" style="max-width:480px">
+  <div class="mh"><h3>✏️ Alım Kalemini Düzenle</h3><button class="mx" onclick="CM('m-alim-duz')">&#215;</button></div>
+  <div class="mb">
+    <input type="hidden" id="alz-idx">
+    <div class="f" style="margin-bottom:11px"><label>Malzeme Adı</label>
+      <input id="alz-ad" style="width:100%"></div>
+    <div style="display:flex;gap:10px;margin-bottom:11px">
+      <div class="f" style="flex:1"><label>Miktar</label>
+        <input type="number" id="alz-mik" min="1" style="width:100%"></div>
+      <div class="f" style="flex:1"><label>Birim</label>
+        <select id="alz-birim" style="width:100%">
+          <option>Adet</option><option>Metre</option><option>Kg</option><option>Kutu</option><option>Paket</option><option>Litre</option><option>Top</option><option>Rulo</option><option>Çift</option><option>Takım</option>
+        </select></div>
+    </div>
+    <div class="f" style="margin-bottom:11px"><label>Birim Fiyat (₺)</label>
+      <input type="number" id="alz-fiyat" min="0" step="0.01" style="width:100%"></div>
+    <div class="f" style="margin-bottom:4px"><label>Açıklama / Not</label>
+      <input id="alz-not" style="width:100%" placeholder="Opsiyonel"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-alim-duz')">Vazgeç</button><button class="btn btn-p" onclick="alimDuzenleKaydet()">💾 Kaydet</button></div>
 </div></div>
 
 <!-- KONFIRM -->
@@ -3523,6 +3552,7 @@ function sbBaslat(done){
             var yerelSayim=db.sayim||{};
             db.sayim=Object.assign({},r.data,yerelSayim);
           }
+          if(r.key==='talepListe' && r.data) db.talepListe=r.data;
           if(r.key==='nextIds' && r.data){
             if(r.data.nextId&&r.data.nextId>db.nextId)db.nextId=r.data.nextId;
             if(r.data.nextHarId)db.nextHarId=r.data.nextHarId;
@@ -3680,6 +3710,7 @@ function sbAyarKaydet(){
     {key:'hareketler',data:db.hareketler,updated_at:ts},
     {key:'odunc',data:db.odunc||[],updated_at:ts},
     {key:'sayim',data:db.sayim||{},updated_at:ts},
+    {key:'talepListe',data:db.talepListe||[],updated_at:ts},
     {key:'nextIds',data:{nextId:db.nextId,nextHarId:db.nextHarId,nextDolapId:db.nextDolapId,nextOduncId:db.nextOduncId||1},updated_at:ts}
   ],function(err){
     if(err) toast('⚠️ Bulut kaydı BAŞARISIZ! İnternet bağlantınızı kontrol edin.',4500);
@@ -3710,6 +3741,7 @@ function sbCanliYenile(){
         renderStok(); updDBInfo();
         if(document.getElementById('m-odunc').classList.contains('on'))oduncRender();
         if(document.getElementById('m-sayim')&&document.getElementById('m-sayim').classList.contains('on'))sayimBaslat();
+        updTalepBadge();
         if(document.getElementById('page-har').classList.contains('on'))renderHar();
         if(document.getElementById('page-dolap').classList.contains('on'))renderDolaplar();
         if(document.getElementById('page-kullanici').classList.contains('on'))renderKullanicilar();
@@ -3784,6 +3816,7 @@ function lgAc(usr){
   uRolUygula(usr.rol);
   logEkle('giris','Sisteme giris yapildi');
   renderStok(); updDBInfo();
+  updTalepBadge();
   setTimeout(function(){girisBildirim();},400);
   setTimeout(function(){qrParametreUygula();},300);
 }
@@ -3977,7 +4010,7 @@ function epT(id,btn){var i=document.getElementById(id);i.type=(i.type==='passwor
 
 const DB_KEY='envanter_teknik_v5';
 const DEF={"urunler": [{"id": 1, "ad": "Wifi 6 Adaptör", "marka": "TPLİNK, USB 3.0", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 2, "ad": "KWM Switch", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 3, "ad": "Programlanabilir Priz", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 4, "ad": "Cırt Cırtlı Bant", "marka": "", "birim": "Paket", "kat": "Sarf Malzeme", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 5, "ad": "Yapışkan Kroşe", "marka": "", "birim": "Paket", "kat": "Sarf Malzeme", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 6, "ad": "Plastik Kelepçe", "marka": "", "birim": "Paket", "kat": "Sarf Malzeme", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 7, "ad": "Kasa İçi Kart Okuyucu", "marka": "SLİNK (SLX-533A)", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "SLX-533A", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 8, "ad": "Modem (Switch)", "marka": "TPLİNK (10/100MBPS) (5 Lİ)", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 9, "ad": "TYPE C Çoklayıcı", "marka": "11 PORT ÇIKIŞLI", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 10, "ad": "TYPE C Çoklayıcı", "marka": "6 PORT ÇIKIŞLI, Baseus Marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 3, "cikan": 1, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 11, "ad": "USB 3.0 Hub", "marka": "Hadron, 4 Adet Usb 3.0 Çıkışlı", "birim": "Adet", "kat": "Elektronik", "mevcut": 9, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 12, "ad": "USB 3.0 Hub", "marka": "Dark, 2 type c, 2 Usb 2.0, 1 Usb 3.0", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 13, "ad": "Vida Kutusu", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 14, "ad": "M2 NVME Disk Okuyucu Klon Özellikli", "marka": "Dark", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 15, "ad": "M2 NVME Disk Kutusu", "marka": "Dark, Usb 3.2, Type C girişli", "birim": "Adet", "kat": "Elektronik", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 16, "ad": "M2 NVME VE Sata Disk Okuyucu", "marka": "Codegen", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 17, "ad": "M2 NVME VE Sata Disk Kutusu", "marka": "Dark", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 18, "ad": "Sabit Disk ve Sata SSD Disk Kutusu", "marka": "Dark, 2.5 inç Laptop Diskler için", "birim": "Adet", "kat": "Elektronik", "mevcut": 7, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 19, "ad": "Sabit Disk Okuyucu", "marka": "Sata ve Mekanik Diskler İçin, Tek girişli, Adaptörlü", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 20, "ad": "Sabit Disk Okuyucu (Klonlu)", "marka": "Sata ve Mekanik Diskler İçin, Çift girişli, Adaptörlü, Klon özelikli", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 21, "ad": "5V Adaptör", "marka": "3.5 Amper Çıkışlı, 0.5 Amper Çıkışlı", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 22, "ad": "Toz Gözlüğü", "marka": "", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 23, "ad": "Anti Statik Eldiven", "marka": "Çift Olarak", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 24, "ad": "EZ RJ45 Konnektör", "marka": "7 paket 50'lik, 1 Paket 100'lük", "birim": "Paket", "kat": "Ağ & İletişim", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 25, "ad": "RJ45 Konnektör Kılıfı", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 44, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 26, "ad": "RJ45 Çakma Pensesi", "marka": "Cortex marka", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 27, "ad": "EZRJ45 Çakma Pensesi", "marka": "S LİNK (hem ezrj45 hemde rj45 konektörüne uygundur.)", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 28, "ad": "Termal Macun", "marka": "Arctic, Mx-4 özellikli", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 29, "ad": "Anti Statik Bileklik", "marka": "", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 30, "ad": "RJ45 Uzatıcı", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 31, "ad": "Kablo Kesme Aleti", "marka": "Ethernet Kablosu için, Plato Marka", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 32, "ad": "Displayport Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 13, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 33, "ad": "Displayport Hdmi Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 34, "ad": "Displayport to VGA", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 35, "ad": "Displayport to HDMİ", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 13, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 36, "ad": "Displayport to DVİ", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 37, "ad": "HDMİ 2 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 38, "ad": "HDMİ 3 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 39, "ad": "HDMİ 5 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 7, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 40, "ad": "Hdmi to DVİ Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 41, "ad": "Hdmi to VGA", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 42, "ad": "Hdmi to DVİ", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 43, "ad": "Usb 2.0 to Uzatma Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 44, "ad": "Usb 3.0 Uzatma Kablosu 3 Metrelik", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 45, "ad": "Usb 3.0 Uzatma Kablosu 1.5 Metrelik", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 46, "ad": "Usb 3.0 Uzatma Kablosu 0.10 CM", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 47, "ad": "Organizer", "marka": "", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 6, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 48, "ad": "TYPE C Uzatıcı", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 49, "ad": "TYPE C to Usb 3.1", "marka": "Mini OTG Adaptör, Baseus Marka", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 50, "ad": "HDMİ Uzatıcı", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 10, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 51, "ad": "HDMİ Çoğaltıcı", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 52, "ad": "Eski Kablo Tester", "marka": "Slink", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 53, "ad": "Kablo/Hat Takip Probe", "marka": "Goldtool Marka", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 54, "ad": "Kablo Bulucu - Hat Takip Cihazı", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 55, "ad": "VGA Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 24, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 56, "ad": "Kompresör", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 57, "ad": "Power Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 58, "ad": "Cat 6 15 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 59, "ad": "Cat 6 20 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 60, "ad": "Yazıcı Kablosu", "marka": "Usb 2.0", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 61, "ad": "Cat 6 5 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 62, "ad": "Cat 6 10 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 63, "ad": "SWİTCH Yazıcı Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 64, "ad": "SWİTCH Client Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 65, "ad": "Sata Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 66, "ad": "SWİTCH Wifi Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 67, "ad": "Cat 6 8 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 68, "ad": "Cat 6 3 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 69, "ad": "Maske", "marka": "", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 10, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 70, "ad": "Usb 2.0 to Mini Type B", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 1, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 71, "ad": "Usb 3.0 to Mini Type B", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 2, "cikan": 1, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 72, "ad": "Usb 3.0 to Micro B Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 73, "ad": "Aux Ses Kablosu", "marka": "Kulaklık Ses Kablosu", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 74, "ad": "Laptop Açma Aparatı", "marka": "", "birim": "Paket", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 75, "ad": "Klavye Toz Alma Fırçası", "marka": "", "birim": "Adet", "kat": "Temizlik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 76, "ad": "Termal Macun", "marka": "MX4, Arctic Marka", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 77, "ad": "Anti Statik Eldiven", "marka": "Çift Olarak", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 78, "ad": "Tornavida Takımı", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 79, "ad": "Tornavidalar", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 80, "ad": "Maket Bıçağı", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 81, "ad": "Kablo Kesme Aleti", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 82, "ad": "Kablo Sıyırma Aleti", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 83, "ad": "Kargaburun", "marka": "Knipex", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 84, "ad": "L Tipi Yıldız Tornavida", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 85, "ad": "Usb 3.0 Flaş Bellek", "marka": "128 gb, Kingstone marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 6, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 86, "ad": "Type C Flaş Bellek", "marka": "256 gb, Sandisk Marka, Dual Drive Özellikli", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 87, "ad": "Bluetooth Alıcı", "marka": "Dark Marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 88, "ad": "Harici Ssd Disk", "marka": "Hİ LEVEL, 240 GB", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 89, "ad": "Harici Ssd Disk", "marka": "SANDİSK, 240 GB", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 90, "ad": "Harici Sabit Disk", "marka": "WD, 750 GB", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 91, "ad": "Susta", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 92, "ad": "Metre", "marka": "10 Metre", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 93, "ad": "Lazer Metre", "marka": "KL Markalı", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 94, "ad": "Makaron", "marka": "", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 95, "ad": "Usb 2.0 To RS232 Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 96, "ad": "RJ45 To RS232 Seri Konsol Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 97, "ad": "Seriport to Paralelport Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 98, "ad": "TP LİNK Poe Adaptör", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 99, "ad": "USB 2.0 TO RS232 Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 100, "ad": "Usb 2.0 İnternet Adaptörü", "marka": "Asus", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 101, "ad": "Usb 3.0 İnternet Adaptörü", "marka": "Dark", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 102, "ad": "Power Supply Tester", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 103, "ad": "Dahili Ağ Kartı", "marka": "TPLİNK, 200 MBPS (TF-3200)", "birim": "Adet", "kat": "Elektronik", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "TF-3200", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 104, "ad": "Dahili Ağ Kartı", "marka": "SLİNK (SL-exG5), 1 Gigabit", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "SL-exG5", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 105, "ad": "Kablosuz Görüntü Aktarıcı", "marka": "EZCAST Marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 106, "ad": "VGA TO HDMİ Dönüştürücü", "marka": "Beek Marka, Adaptörlü", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 107, "ad": "DVI TO VGA Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 108, "ad": "Molex to 2 SATA Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 11, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 109, "ad": "Molex to SATA Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 110, "ad": "Molex Güç Çoklayıcı", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 9, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 111, "ad": "Anakart Güç Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 112, "ad": "CD'ler ve DVD'ler", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 113, "ad": "Krone Pense", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 114, "ad": "EZRJ45 Konnektör", "marka": "", "birim": "Paket", "kat": "Ağ & İletişim", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 115, "ad": "Yankeske", "marka": "Knipex", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 116, "ad": "Cırt Cırtlı Bant", "marka": "", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 117, "ad": "Kablo Çakma Aleti", "marka": "Slink", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 118, "ad": "Kablo Kesme Aleti", "marka": "Plato", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 119, "ad": "Kablo Sıyırma Aleti", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 120, "ad": "Silinmiş Diskler", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 121, "ad": "Sata Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 37, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 06", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 122, "ad": "PC Kasa İçi SSD Yuvası", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 06", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 123, "ad": "Matkap ve Vida Takımı", "marka": "BOSCH Marka, (205 Nolu Odada)", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 10", "bolme": "2. Raf", "loknot": "205 nolu oda", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}], "dolaplar": [{"id": 1, "ad": "Teknik Dolap 01", "sira": 1, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Adaptörler, hublar, disk kutuları, konnektörler"}, {"id": 2, "ad": "Teknik Dolap 02", "sira": 2, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Görüntü kabloları, USB kabloları, test cihazları"}, {"id": 3, "ad": "Teknik Dolap 03", "sira": 3, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Cat6 network kabloları"}, {"id": 4, "ad": "Teknik Dolap 04", "sira": 4, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "El aletleri, flash bellekler, dönüştürücüler"}, {"id": 5, "ad": "Teknik Dolap 05", "sira": 5, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Ağ aletleri, konnektörler"}, {"id": 6, "ad": "Teknik Dolap 06", "sira": 6, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Sata kablo, SSD yuvaları"}, {"id": 7, "ad": "Teknik Dolap 10", "sira": 7, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Matkap ve takımlar"}], "hareketler": [{"id": 1, "urunId": 10, "tip": "cikan", "miktar": 1, "tarih": "2025-01-15", "aciklama": "Kullanıma alındı", "yapan": "", "ts": 1736899200000}, {"id": 2, "urunId": 70, "tip": "cikan", "miktar": 1, "tarih": "2025-02-01", "aciklama": "", "yapan": "", "ts": 1738368000000}, {"id": 3, "urunId": 71, "tip": "cikan", "miktar": 1, "tarih": "2025-02-01", "aciklama": "", "yapan": "", "ts": 1738368001000}], "nextId": 124, "nextDolapId": 8, "nextHarId": 4};
-function loadDB(){var d;try{const r=localStorage.getItem(DB_KEY);if(r)d=JSON.parse(r);}catch(e){}if(!d)d=JSON.parse(JSON.stringify(DEF));if(!d.odunc)d.odunc=[];if(!d.nextOduncId)d.nextOduncId=1;if(!d.sayim)d.sayim={};return d;}
+function loadDB(){var d;try{const r=localStorage.getItem(DB_KEY);if(r)d=JSON.parse(r);}catch(e){}if(!d)d=JSON.parse(JSON.stringify(DEF));if(!d.odunc)d.odunc=[];if(!d.nextOduncId)d.nextOduncId=1;if(!d.sayim)d.sayim={};if(!d.talepListe)d.talepListe=[];return d;}
 function saveDB(){
   try{ localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo(); }catch(e){}
   sbTumKaydet();
@@ -4782,7 +4815,7 @@ function temaDegistir(){
 }
 
 /* === MALZEME TALEP LISTESI === */
-var talepListe=[];
+/* db.talepListe artık db.talepListe içinde buluta kaydediliyor (kalıcı + ekip ortak) */
 function talepAc(){
   /* Stok dropdown doldur */
   var sel=document.getElementById('tlp-sec');
@@ -4815,37 +4848,56 @@ function talepStokSec(){
     document.getElementById('tlp-mik').focus();
   }
 }
+
+function updTalepBadge(){
+  var b=document.getElementById('talep-badge');
+  if(!b)return;
+  var bekleyen=(db.talepListe||[]).filter(function(t){return t.durum!=='karsilandi';}).length;
+  if(bekleyen>0){ b.textContent=bekleyen; b.style.display='inline-flex'; }
+  else { b.style.display='none'; }
+}
+
+function talepKaydet(){
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}
+  sbAyarKaydet();
+  updTalepBadge();
+}
 function talepEkle(){
   var ad=document.getElementById('tlp-ad').value.trim();
   var mik=parseInt(document.getElementById('tlp-mik').value)||1;
   var birim=document.getElementById('tlp-birim').value;
   if(!ad){toast('Malzeme adı girin!');return;}
-  talepListe.push({ad:ad,mik:mik,birim:birim,stokId:talepSeciliId,durum:'bekliyor'});
+  var eden=document.getElementById('tlp-eden').value.trim()||(ME?ME.ad:'');
+  db.talepListe.push({ad:ad,mik:mik,birim:birim,stokId:talepSeciliId,durum:'bekliyor',eden:eden,ts:Date.now()});
   talepSeciliId=null;
   document.getElementById('tlp-ad').value='';
   document.getElementById('tlp-mik').value='1';
   document.getElementById('tlp-sec').value='';
   talepRender();
+  talepKaydet();
+  logEkle('hareket','Talep eklendi: '+mik+' '+ad+(eden?' - '+eden:''));
   document.getElementById('tlp-ad').focus();
 }
 function talepSil(idx){
-  talepListe.splice(idx,1);
+  db.talepListe.splice(idx,1);
   talepRender();
+  talepKaydet();
 }
 function talepTemizle(){
-  if(talepListe.length===0)return;
+  if(db.talepListe.length===0)return;
   if(!confirm('Tüm liste silinecek. Emin misiniz?'))return;
-  talepListe=[];
+  db.talepListe=[];
   talepRender();
+  talepKaydet();
 }
 function talepRender(){
   var tb=document.getElementById('tlp-tbody');
   var bos=document.getElementById('tlp-bos');
-  if(talepListe.length===0){tb.innerHTML='';bos.style.display='block';return;}
+  if(db.talepListe.length===0){tb.innerHTML='';bos.style.display='block';return;}
   bos.style.display='none';
   var h='';
-  for(var i=0;i<talepListe.length;i++){
-    var t=talepListe[i];
+  for(var i=0;i<db.talepListe.length;i++){
+    var t=db.talepListe[i];
     var karsilandi=(t.durum==='karsilandi');
     h+='<tr'+(karsilandi?' style="opacity:.55"':'')+'>'
       +'<td data-label="Sıra" style="text-align:center;font-weight:700;color:var(--tx3)">'+(i+1)+'</td>'
@@ -4862,7 +4914,7 @@ function talepRender(){
   tb.innerHTML=h;
 }
 function talepCikisYap(idx){
-  var t=talepListe[idx];
+  var t=db.talepListe[idx];
   if(!t||!t.stokId){toast('Bu talep stok ürünüyle bağlı değil');return;}
   var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===t.stokId){u=db.urunler[i];break;}}
   if(!u){toast('Ürün stokta bulunamadı (silinmiş olabilir)');return;}
@@ -4883,18 +4935,19 @@ function talepCikisYap(idx){
   logEkle('hareket','ÇIKIŞ (talepten): '+t.mik+' '+(u.birim||'')+' - '+u.ad+(eden?' → '+eden:''));
   renderStok();
   talepRender();
+  updTalepBadge();
   toast('✅ Çıkış yapıldı, stoktan düşüldü');
 }
 function talepPdf(){
-  if(talepListe.length===0){toast('Listeye en az bir malzeme ekleyin!');return;}
+  if(db.talepListe.length===0){toast('Listeye en az bir malzeme ekleyin!');return;}
   var eden=document.getElementById('tlp-eden').value.trim()||'—';
   var dep=document.getElementById('tlp-dep').value.trim()||'—';
   var tar=document.getElementById('tlp-tar').value||'';
   var tarStr=tar?new Date(tar).toLocaleDateString('tr-TR'):new Date().toLocaleDateString('tr-TR');
   /* Yazdırılabilir HTML penceresi aç */
   var satirlar='';
-  for(var i=0;i<talepListe.length;i++){
-    var t=talepListe[i];
+  for(var i=0;i<db.talepListe.length;i++){
+    var t=db.talepListe[i];
     satirlar+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+escTalep(t.ad)+'</td><td style="text-align:center">'+t.mik+'</td><td style="text-align:center">'+escTalep(t.birim)+'</td></tr>';
   }
   var w=window.open('','_blank');
@@ -4919,7 +4972,7 @@ function talepPdf(){
     +'<h1>MALZEME TALEP LİSTESİ</h1>'
     +'<div class="alt">Teknik Envanter Stok Takip Sistemi</div>'
     +'<div class="bilgi"><div><b>Talep Eden:</b> '+escTalep(eden)+'<br><b>Departman/Birim:</b> '+escTalep(dep)+'</div>'
-    +'<div style="text-align:right"><b>Tarih:</b> '+tarStr+'<br><b>Toplam Kalem:</b> '+talepListe.length+'</div></div>'
+    +'<div style="text-align:right"><b>Tarih:</b> '+tarStr+'<br><b>Toplam Kalem:</b> '+db.talepListe.length+'</div></div>'
     +'<table><thead><tr><th>Sıra</th><th>Malzeme Adı ve Özellikleri</th><th style="text-align:center">Miktar</th><th style="text-align:center">Birim</th></tr></thead>'
     +'<tbody>'+satirlar+'</tbody></table>'
     +'<div class="imza"><div><div class="cizgi"></div>Talep Eden</div><div><div class="cizgi"></div>Onaylayan</div></div>'
@@ -5536,11 +5589,13 @@ function alimEkle(){
   var ad=document.getElementById('alm-ad').value.trim();
   var mik=parseInt(document.getElementById('alm-mik').value)||1;
   var birim=document.getElementById('alm-birim').value;
+  var fiyat=parseFloat(document.getElementById('alm-fiyat').value)||0;
   var not=document.getElementById('alm-not').value.trim();
   if(!ad){toast('Malzeme adı girin!');return;}
-  alimListe.push({ad:ad,mik:mik,birim:birim,not:not});
+  alimListe.push({ad:ad,mik:mik,birim:birim,fiyat:fiyat,not:not});
   document.getElementById('alm-ad').value='';
   document.getElementById('alm-mik').value='1';
+  document.getElementById('alm-fiyat').value='';
   document.getElementById('alm-not').value='';
   document.getElementById('alm-sec').value='';
   alimRender();
@@ -5576,6 +5631,35 @@ function alimBitenleriEkle(){
   else toast('Biten veya kritik ürün yok ✓');
 }
 
+
+function alimDuzenleAc(idx){
+  var t=alimListe[idx];
+  if(!t)return;
+  document.getElementById('alz-idx').value=idx;
+  document.getElementById('alz-ad').value=t.ad||'';
+  document.getElementById('alz-mik').value=t.mik||1;
+  var bsel=document.getElementById('alz-birim');
+  for(var k=0;k<bsel.options.length;k++){if(bsel.options[k].value===t.birim){bsel.selectedIndex=k;break;}}
+  document.getElementById('alz-fiyat').value=t.fiyat||'';
+  document.getElementById('alz-not').value=t.not||'';
+  OM('m-alim-duz');
+}
+function alimDuzenleKaydet(){
+  var idx=parseInt(document.getElementById('alz-idx').value);
+  var t=alimListe[idx];
+  if(!t)return;
+  var ad=document.getElementById('alz-ad').value.trim();
+  if(!ad){toast('Malzeme adı boş olamaz!');return;}
+  t.ad=ad;
+  t.mik=parseInt(document.getElementById('alz-mik').value)||1;
+  t.birim=document.getElementById('alz-birim').value;
+  t.fiyat=parseFloat(document.getElementById('alz-fiyat').value)||0;
+  t.not=document.getElementById('alz-not').value.trim();
+  CM('m-alim-duz');
+  alimRender();
+  toast('✅ Güncellendi');
+}
+
 function alimSil(idx){ alimListe.splice(idx,1); alimRender(); }
 function alimTemizle(){
   if(alimListe.length===0)return;
@@ -5585,21 +5669,31 @@ function alimTemizle(){
 function alimRender(){
   var tb=document.getElementById('alm-tbody');
   var bos=document.getElementById('alm-bos');
-  if(alimListe.length===0){tb.innerHTML='';bos.style.display='block';return;}
+  var gt=document.getElementById('alm-genel-toplam');
+  if(alimListe.length===0){tb.innerHTML='';bos.style.display='block';if(gt)gt.textContent='';return;}
   bos.style.display='none';
   var h='';
+  var genelToplam=0;
   for(var i=0;i<alimListe.length;i++){
     var t=alimListe[i];
+    var fiyat=t.fiyat||0;
+    var satirToplam=fiyat*t.mik;
+    genelToplam+=satirToplam;
     h+='<tr>'
       +'<td data-label="Sıra" style="text-align:center;font-weight:700;color:var(--tx3)">'+(i+1)+'</td>'
       +'<td data-label="Malzeme" style="font-weight:600">'+e(t.ad)+'</td>'
       +'<td data-label="Miktar" style="text-align:right;font-weight:700">'+t.mik+'</td>'
       +'<td data-label="Birim">'+e(t.birim)+'</td>'
+      +'<td data-label="B.Fiyat" style="text-align:right">'+(fiyat>0?fiyat.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺':'—')+'</td>'
+      +'<td data-label="Toplam" style="text-align:right;font-weight:700">'+(fiyat>0?satirToplam.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺':'—')+'</td>'
       +'<td data-label="Açıklama" style="color:var(--tx2);font-size:12.5px">'+e(t.not||'—')+'</td>'
-      +'<td class="mob-acts" style="text-align:center"><button class="btn btn-sm btn-del" onclick="alimSil('+i+')">Sil</button></td>'
-      +'</tr>';
+      +'<td class="mob-acts" style="text-align:center;white-space:nowrap">'
+      +'<button class="btn btn-sm btn-ed" onclick="alimDuzenleAc('+i+')" title="Düzenle">✏️</button> '
+      +'<button class="btn btn-sm btn-del" onclick="alimSil('+i+')" title="Sil">🗑</button>'
+      +'</td></tr>';
   }
   tb.innerHTML=h;
+  if(gt)gt.textContent=genelToplam>0?('Genel Toplam: '+genelToplam.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺'):'';
 }
 function alimExcel(){
   if(alimListe.length===0){toast('Listeye en az bir malzeme ekleyin!');return;}
@@ -5609,17 +5703,20 @@ function alimExcel(){
   var tar=document.getElementById('alm-tar').value||'';
   var tarStr=tar?new Date(tar).toLocaleDateString('tr-TR'):new Date().toLocaleDateString('tr-TR');
   var aoa=[];
+  var genelToplam=0; alimListe.forEach(function(t){genelToplam+=(t.fiyat||0)*t.mik;});
   aoa.push(['MALZEME ALIM LİSTESİ']);
   aoa.push(['Hazırlayan:',eden,'','Tarih:',tarStr]);
   aoa.push(['Departman/Birim:',dep,'','Toplam Kalem:',alimListe.length]);
   aoa.push([]);
-  aoa.push(['Sıra','Malzeme Adı ve Özellikleri','Miktar','Birim','Açıklama']);
+  aoa.push(['Sıra','Malzeme Adı ve Özellikleri','Miktar','Birim','Birim Fiyat','Toplam','Açıklama']);
   for(var i=0;i<alimListe.length;i++){
     var t=alimListe[i];
-    aoa.push([i+1,t.ad,t.mik,t.birim,t.not||'']);
+    aoa.push([i+1,t.ad,t.mik,t.birim,t.fiyat||0,(t.fiyat||0)*t.mik,t.not||'']);
   }
+  aoa.push([]);
+  aoa.push(['','','','','','Genel Toplam:',genelToplam]);
   var ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:6},{wch:42},{wch:10},{wch:12},{wch:30}];
+  ws['!cols']=[{wch:6},{wch:38},{wch:9},{wch:10},{wch:11},{wch:11},{wch:26}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Alım Listesi');
   XLSX.writeFile(wb,'Malzeme_Alim_'+(tar||new Date().toISOString().slice(0,10))+'.xlsx');
@@ -5632,9 +5729,12 @@ function alimPdf(){
   var tar=document.getElementById('alm-tar').value||'';
   var tarStr=tar?new Date(tar).toLocaleDateString('tr-TR'):new Date().toLocaleDateString('tr-TR');
   var satirlar='';
+  var genelToplam=0;
   for(var i=0;i<alimListe.length;i++){
     var t=alimListe[i];
-    satirlar+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+escTalep(t.ad)+'</td><td style="text-align:center">'+t.mik+'</td><td style="text-align:center">'+escTalep(t.birim)+'</td><td>'+escTalep(t.not||'')+'</td></tr>';
+    var fy=t.fiyat||0, st=fy*t.mik;
+    genelToplam+=st;
+    satirlar+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+escTalep(t.ad)+'</td><td style="text-align:center">'+t.mik+'</td><td style="text-align:center">'+escTalep(t.birim)+'</td><td style="text-align:right">'+(fy>0?fy.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺':'—')+'</td><td style="text-align:right">'+(fy>0?st.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺':'—')+'</td><td>'+escTalep(t.not||'')+'</td></tr>';
   }
   var w=window.open('','_blank');
   var doc='<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Malzeme Alım Listesi</title>'
@@ -5659,8 +5759,9 @@ function alimPdf(){
     +'<div class="alt">Teknik Envanter Stok Takip Sistemi</div>'
     +'<div class="bilgi"><div><b>Hazırlayan:</b> '+escTalep(eden)+'<br><b>Departman/Birim:</b> '+escTalep(dep)+'</div>'
     +'<div style="text-align:right"><b>Tarih:</b> '+tarStr+'<br><b>Toplam Kalem:</b> '+alimListe.length+'</div></div>'
-    +'<table><thead><tr><th>Sıra</th><th>Malzeme Adı ve Özellikleri</th><th style="text-align:center">Miktar</th><th style="text-align:center">Birim</th><th>Açıklama</th></tr></thead>'
+    +'<table><thead><tr><th>Sıra</th><th>Malzeme Adı ve Özellikleri</th><th style="text-align:center">Miktar</th><th style="text-align:center">Birim</th><th style="text-align:right">B.Fiyat</th><th style="text-align:right">Toplam</th><th>Açıklama</th></tr></thead>'
     +'<tbody>'+satirlar+'</tbody></table>'
+    +(genelToplam>0?'<div style="text-align:right;font-weight:700;font-size:14px;margin-top:12px">Genel Toplam: '+genelToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺</div>':'')
     +'<div class="imza"><div><div class="cizgi"></div>Hazırlayan</div><div><div class="cizgi"></div>Onaylayan</div></div>'
     +'<div class="foot">Bu belge Teknik Envanter programı ile '+new Date().toLocaleString('tr-TR')+' tarihinde oluşturulmuştur.</div>'
     +'</body></html>';
@@ -6066,7 +6167,7 @@ function logExcel(){
 }
 
 function talepExcel(){
-  if(talepListe.length===0){toast('Listeye en az bir malzeme ekleyin!');return;}
+  if(db.talepListe.length===0){toast('Listeye en az bir malzeme ekleyin!');return;}
   if(typeof XLSX==='undefined'){toast('Excel kütüphanesi yüklenemedi!');return;}
   var eden=document.getElementById('tlp-eden').value.trim()||'—';
   var dep=document.getElementById('tlp-dep').value.trim()||'—';
@@ -6075,11 +6176,11 @@ function talepExcel(){
   var aoa=[];
   aoa.push(['MALZEME TALEP LİSTESİ']);
   aoa.push(['Talep Eden:',eden,'','Tarih:',tarStr]);
-  aoa.push(['Departman/Birim:',dep,'','Toplam Kalem:',talepListe.length]);
+  aoa.push(['Departman/Birim:',dep,'','Toplam Kalem:',db.talepListe.length]);
   aoa.push([]);
   aoa.push(['Sıra','Malzeme Adı ve Özellikleri','Miktar','Birim']);
-  for(var i=0;i<talepListe.length;i++){
-    var t=talepListe[i];
+  for(var i=0;i<db.talepListe.length;i++){
+    var t=db.talepListe[i];
     aoa.push([i+1,t.ad,t.mik,t.birim]);
   }
   var ws=XLSX.utils.aoa_to_sheet(aoa);
