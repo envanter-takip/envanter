@@ -616,6 +616,10 @@ body.dark .rt td{color:var(--tx)}
       <div class="f"><label>Çıkan</label><input id="fu-cikan" type="number" min="0" placeholder="0"></div>
       <div class="f"><label>Kritik Eşik</label><input id="fu-min" type="number" min="0" placeholder="0"><div class="fhint">Bu altı = Kritik</div></div>
     </div>
+    <div id="fu-stok-uyari" style="display:none;background:var(--amb-bg);border:1px solid var(--brd);border-radius:var(--r);padding:9px 12px;margin:-6px 0 12px;font-size:12px;color:var(--tx2)">
+      🔒 Stok miktarını değiştirmek için <b>Stok Hareketi</b> kullanın (buradan değiştirmeyin) — böylece hareket geçmişi ve sayım kayıtları doğru kalır.
+      <button class="btn btn-sm" onclick="CM('m-u');openHarModal(editUID)" style="margin-left:6px">📤 Stok Hareketi Aç</button>
+    </div>
     <div class="sec">Stok Durumu</div>
     <div class="f">
       <label>Durum Tipi</label>
@@ -4415,6 +4419,13 @@ function openUrunModal(id=null){
     document.getElementById('fu-not').value=u.not||'';
     document.getElementById('fu-demirbas').checked=!!u.demirbas;
     selDur(u.durum_tip||'normal');
+    /* Mevcut ürünlerde stok alanları kilitlenir: değişiklik sadece Stok Hareketi'nden yapılmalı,
+       böylece hareket geçmişi ve envanter sayımı tutarlı kalır. */
+    document.getElementById('fu-mevcut').readOnly=true;
+    document.getElementById('fu-cikan').readOnly=true;
+    document.getElementById('fu-mevcut').style.background='var(--sur2)';
+    document.getElementById('fu-cikan').style.background='var(--sur2)';
+    document.getElementById('fu-stok-uyari').style.display='block';
   } else {
     document.getElementById('m-u-t').textContent='Yeni Ürün';
     ['fu-ad','fu-loknot','fu-sku','fu-ted'].forEach(i=>document.getElementById(i).value='');
@@ -4425,6 +4436,12 @@ function openUrunModal(id=null){
     document.getElementById('fu-bolme').innerHTML='<option value="">— Dolap seçin —</option>';
     document.getElementById('fu-demirbas').checked=false;
     selDur('normal');
+    /* Yeni ürün: ilk stok girişi elle yapılabilir (henüz hareket geçmişi yok) */
+    document.getElementById('fu-mevcut').readOnly=false;
+    document.getElementById('fu-cikan').readOnly=false;
+    document.getElementById('fu-mevcut').style.background='';
+    document.getElementById('fu-cikan').style.background='';
+    document.getElementById('fu-stok-uyari').style.display='none';
   }
   OM('m-u');setTimeout(()=>document.getElementById('fu-ad').focus(),60);
 }
