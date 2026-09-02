@@ -461,6 +461,7 @@ body.dark .rt td{color:var(--tx)}
   <div class="sb-a" onclick="talepAc()" style="position:relative">📝 Malzeme Talep Listesi <span id="talep-badge" class="talep-badge" style="display:none"></span></div>
   <div class="sb-a" onclick="alimAc()">🛒 Malzeme Alım Listesi</div>
   <div class="sb-a" onclick="oduncAc()">🔄 Ödünç / Geçici Verilenler</div>
+  <div class="sb-a" onclick="demirbasAc()">🏷 Demirbaş Ürünler</div>
   <div class="sb-a" onclick="sayimAc()">🔢 Envanter Sayımı</div>
 
   <div class="sb-sec">Raporlar &amp; Kayıtlar</div>
@@ -810,6 +811,9 @@ body.dark .rt td{color:var(--tx)}
     <div style="font-weight:700;margin:16px 0 6px;color:var(--blu)">📱 QR Kod & Etiket</div>
     <p>Dolap &amp; Bölme sayfasında her dolabın <b>📱 QR</b> butonuyla, o dolap ve rafları için QR kod üretebilirsiniz. Etiketleri yazdırıp dolaplara/raflara yapıştırın. Telefon kameranızla okuttuğunuzda, o dolabın veya rafın ürünleri programda otomatik filtrelenmiş olarak açılır — sahada hızlı erişim sağlar.</p>
 
+    <div style="font-weight:700;margin:16px 0 6px;color:var(--blu)">🏷 Demirbaş Ürünler</div>
+    <p>Taşınırdan devralınan demirbaş kaynaklı ürünleri işaretleyip (ürün düzenlemede "Demirbaş Kaynaklı" kutusu) takip edebilirsiniz. <b>Demirbaş Ürünler</b> ekranı (Listeler & İşlemler'de veya Raporlar'da) her demirbaşın <b>depoda mı yoksa kişide mi</b> olduğunu gösterir — kimde ne var, ne zamandır tek bakışta görünür. Bir demirbaşı birine vermek/geri almak, mevcut <b>Ödünç / Geçici Verilenler</b> sistemi üzerinden yapılır: iade tarihi girerseniz geçici, boş bırakırsanız süresiz (kalıcı zimmet) sayılır.</p>
+
     <div style="font-weight:700;margin:16px 0 6px;color:var(--pur)">📈 Raporlar</div>
     <p>Tükenenler, kritik seviye, en çok kullanılanlar, dolap/kategori dağılımı, dönemsel hareketler, <b>hareketsiz (ölü) stok</b> ve genel özet raporlarını görürsünüz. Hareketsiz ürünler raporu, uzun süredir hiç çıkış görmeyen (rafta duran ama kullanılmayan) malzemeleri tespit eder. <b>Tarih aralığı</b> seçerek (bu ay, geçen ay, son 3 ay, bu yıl) dönemsel analiz yapabilir; raporları <b>grafiklerle</b> (çubuk/pasta) görüntüleyip Excel ve PDF olarak alabilirsiniz.</p>
 
@@ -897,6 +901,7 @@ body.dark .rt td{color:var(--tx)}
       <button class="btn rapor-tab" data-r="kategori" onclick="raporGoster('kategori')">🏷 Kategori Dağılımı</button>
       <button class="btn rapor-tab" data-r="donemsel" onclick="raporGoster('donemsel')">📅 Dönemsel Hareket</button>
       <button class="btn rapor-tab" data-r="oludstok" onclick="raporGoster('oludstok')">💤 Hareketsiz Ürünler</button>
+      <button class="btn rapor-tab" onclick="CM('m-rapor');demirbasAc()">🏷 Demirbaş Ürünler</button>
       <button class="btn rapor-tab" data-r="ozet" onclick="raporGoster('ozet')">📋 Genel Özet</button>
     </div>
     <div id="rapor-tarih-secici" style="display:none;background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1197,6 +1202,27 @@ body.dark .rt td{color:var(--tx)}
       <input id="alz-not" style="width:100%" placeholder="Opsiyonel"></div>
   </div>
   <div class="mf"><button class="btn" onclick="CM('m-alim-duz')">Vazgeç</button><button class="btn btn-p" onclick="alimDuzenleKaydet()">💾 Kaydet</button></div>
+</div></div>
+
+<div class="ov" id="m-demirbas" style="z-index:8000"><div class="modal" style="max-width:900px;width:95vw">
+  <div class="mh"><h3>🏷 Demirbaş Ürünler</h3><button class="mx" onclick="CM('m-demirbas')">&#215;</button></div>
+  <div class="mb" style="max-height:82vh;overflow-y:auto">
+    <div style="background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--tx2)">
+      🏷 Taşınırdan devralınan demirbaş kaynaklı ürünler. Bir demirbaşı birine verirken/geri alırken <b>Ödünç / Geçici Verilenler</b> sistemi kullanılır — buradan hızlıca erişebilirsiniz. İade tarihi belirtmezseniz kayıt süresiz (kalıcı zimmet) olarak kalır.
+    </div>
+    <div id="demirbas-ozet" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <table class="rt">
+      <thead><tr>
+        <th>Ürün</th><th>Yeri</th><th style="text-align:center">Adet</th><th>Durum</th><th style="text-align:center">İşlem</th>
+      </tr></thead>
+      <tbody id="demirbas-tbody"></tbody>
+    </table>
+    <div id="demirbas-bos" style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">Demirbaş işaretli ürün yok.</div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="CM('m-demirbas')">Kapat</button>
+    <button class="btn btn-p" onclick="demirbasPdf()">📄 PDF</button>
+  </div>
 </div></div>
 
 <!-- KONFIRM -->
@@ -3751,6 +3777,7 @@ function sbCanliYenile(){
         renderStok(); updDBInfo();
         if(document.getElementById('m-odunc').classList.contains('on'))oduncRender();
         if(document.getElementById('m-sayim')&&document.getElementById('m-sayim').classList.contains('on'))sayimBaslat();
+        if(document.getElementById('m-demirbas')&&document.getElementById('m-demirbas').classList.contains('on'))demirbasRender();
         updTalepBadge();
         if(document.getElementById('page-har').classList.contains('on'))renderHar();
         if(document.getElementById('page-dolap').classList.contains('on'))renderDolaplar();
@@ -4886,6 +4913,95 @@ function updTalepBadge(){
   var bekleyen=(db.talepListe||[]).filter(function(t){return t.durum!=='karsilandi';}).length;
   if(bekleyen>0){ b.textContent=bekleyen; b.style.display='inline-flex'; }
   else { b.style.display='none'; }
+}
+
+
+/* === DEMİRBAŞ ÜRÜNLER (Ödünç sistemiyle birleşik görünüm) === */
+function demirbasAc(){
+  demirbasRender();
+  OM('m-demirbas');
+}
+function demirbasKimde(urunId){
+  /* Bu demirbaş ürün şu an kişide mi? Ödünç kayıtlarından bulur (en güncel "kiside" kaydı) */
+  if(!db.odunc)return null;
+  var eslesen=db.odunc.filter(function(k){return k.stokId===urunId && k.durum==='kiside';});
+  if(!eslesen.length)return null;
+  eslesen.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+  return eslesen[0];
+}
+function demirbasRender(){
+  var list=db.urunler.filter(function(u){return u.demirbas;});
+  var tb=document.getElementById('demirbas-tbody');
+  var bos=document.getElementById('demirbas-bos');
+  if(!list.length){tb.innerHTML='';bos.style.display='block';document.getElementById('demirbas-ozet').innerHTML='';return;}
+  bos.style.display='none';
+  /* Dolap/raf sırasına göre sırala */
+  function bolmeNo(x){var b=(x&&x.bolme)?String(x.bolme):'';var m=b.match(/\d+/);return m?parseInt(m[0]):9999;}
+  list=list.slice().sort(function(a,b){
+    var d=((a.dolap||'')).localeCompare((b.dolap||''),'tr'); if(d!==0)return d;
+    return bolmeNo(a)-bolmeNo(b);
+  });
+  var depoda=0, disarida=0;
+  var h='';
+  for(var i=0;i<list.length;i++){
+    var u=list[i];
+    var kayit=demirbasKimde(u.id);
+    var durumHtml;
+    if(kayit){
+      disarida++;
+      var tarih=kayit.ver?new Date(kayit.ver).toLocaleDateString('tr-TR'):'';
+      var sureli=kayit.iade?(' · iade: '+new Date(kayit.iade).toLocaleDateString('tr-TR')):' · süresiz';
+      durumHtml='<span style="color:var(--amb);font-weight:700">👤 '+e(kayit.kisi)+'</span><div style="font-size:11px;color:var(--tx3)">'+tarih+sureli+'</div>';
+    } else {
+      depoda++;
+      durumHtml='<span style="color:var(--grn);font-weight:700">📦 Depoda</span>';
+    }
+    h+='<tr>'
+      +'<td style="font-weight:600">'+e(u.ad)+(u.marka?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(u.marka)+'</div>':'')+'</td>'
+      +'<td style="font-size:12px;color:var(--tx2)">'+e(u.dolap||'—')+(u.bolme?' / '+e(u.bolme):'')+'</td>'
+      +'<td style="text-align:center">'+kalan(u)+' '+e(u.birim||'')+'</td>'
+      +'<td>'+durumHtml+'</td>'
+      +'<td style="text-align:center;white-space:nowrap">';
+    if(kayit){
+      h+='<button class="btn btn-sm btn-p" onclick="oduncIadeEt('+kayit.id+');demirbasRender()" title="İade al">✅ İade</button>';
+    } else {
+      h+='<button class="btn btn-sm" onclick="demirbasVer('+u.id+')" title="Birine ver">📤 Ver</button>';
+    }
+    h+='</td></tr>';
+  }
+  tb.innerHTML=h;
+  document.getElementById('demirbas-ozet').innerHTML=
+    sayimKart('Toplam Demirbaş',list.length,'var(--tx2)')
+    +sayimKart('📦 Depoda',depoda,'var(--grn)')
+    +sayimKart('👤 Kişilerde',disarida,disarida>0?'var(--amb)':'var(--tx2)');
+}
+function demirbasVer(urunId){
+  /* Ödünç ekleme formunu bu ürünle önceden doldurup açar */
+  CM('m-demirbas');
+  oduncAc();
+  var sel=document.getElementById('od-sec');
+  for(var i=0;i<sel.options.length;i++){
+    if(sel.options[i].value==String(urunId)){ sel.selectedIndex=i; oduncStokSec(); break; }
+  }
+}
+function demirbasPdf(){
+  var list=db.urunler.filter(function(u){return u.demirbas;});
+  if(!list.length){toast('Demirbaş işaretli ürün yok!');return;}
+  var satirlar='';
+  for(var i=0;i<list.length;i++){
+    var u=list[i];
+    var kayit=demirbasKimde(u.id);
+    var durum=kayit?('Kişide: '+kayit.kisi+(kayit.iade?' (İade: '+new Date(kayit.iade).toLocaleDateString('tr-TR')+')':' (Süresiz)')):'Depoda';
+    satirlar+='<tr><td>'+escTalep(u.ad)+'</td><td>'+escTalep(u.dolap||'-')+(u.bolme?' / '+escTalep(u.bolme):'')+'</td><td style="text-align:center">'+kalan(u)+' '+escTalep(u.birim||'')+'</td><td>'+escTalep(durum)+'</td></tr>';
+  }
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Demirbaş Ürün Listesi</title>'
+    +'<style>body{font-family:Arial,sans-serif;padding:34px;color:#1a1a18}h1{text-align:center;font-size:20px;margin:0 0 4px}.alt{text-align:center;color:#777;font-size:12px;margin-bottom:22px}table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#7c3aed;color:#fff;padding:8px 9px;text-align:left}td{padding:7px 9px;border-bottom:1px solid #e0e0dc}tr:nth-child(even) td{background:#f5f5f3}.foot{margin-top:24px;text-align:center;font-size:10px;color:#aaa}</style></head><body>'
+    +'<h1>DEMİRBAŞ KAYNAKLI ÜRÜN LİSTESİ</h1><div class="alt">'+new Date().toLocaleString('tr-TR')+'</div>'
+    +'<table><thead><tr><th>Ürün</th><th>Yeri</th><th>Adet</th><th>Durum</th></tr></thead><tbody>'+satirlar+'</tbody></table>'
+    +'<div class="foot">Teknik Envanter Stok Takip Sistemi</div></body></html>');
+  w.document.close();
+  setTimeout(function(){w.print();},400);
 }
 
 function talepKaydet(){
