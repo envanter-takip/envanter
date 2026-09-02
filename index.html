@@ -4471,7 +4471,15 @@ function saveUrun(){
     if(dolapAd && u.dolap !== dolapAd){
       data.sira_dolap = nextSiraForDolap(dolapAd);
     }
+    var oncekiKalanUD=kalan(u);
     Object.assign(u,data);
+    /* Ürün formundan doğrudan Mevcut/Çıkan değiştirilmiş olabilir (Stok Hareketi'nden değil).
+       Bekleyen bir sayım değeri varsa, bu meşru değişikliğin farkı kadar onu da kaydır. */
+    if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
+      var yeniKalanUD=kalan(u);
+      var deltaUD=yeniKalanUD-oncekiKalanUD;
+      if(deltaUD!==0) db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+deltaUD);
+    }
     kayitId=editUID;
     logEkle('urun-duzenle','Ürün güncellendi: '+data.ad);
     toast('✅ Ürün güncellendi');
