@@ -4515,15 +4515,7 @@ function saveUrun(){
     if(dolapAd && u.dolap !== dolapAd){
       data.sira_dolap = nextSiraForDolap(dolapAd);
     }
-    var oncekiKalanUD=kalan(u);
     Object.assign(u,data);
-    /* Ürün formundan doğrudan Mevcut/Çıkan değiştirilmiş olabilir (Stok Hareketi'nden değil).
-       Bekleyen bir sayım değeri varsa, bu meşru değişikliğin farkı kadar onu da kaydır. */
-    if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
-      var yeniKalanUD=kalan(u);
-      var deltaUD=yeniKalanUD-oncekiKalanUD;
-      if(deltaUD!==0) db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+deltaUD);
-    }
     kayitId=editUID;
     logEkle('urun-duzenle','Ürün güncellendi: '+data.ad);
     toast('✅ Ürün güncellendi');
@@ -4610,17 +4602,9 @@ function saveHar(){
   if(!uid){toast('❗ Ürün seçin!');return;}
   if(mik<0){toast('❗ Geçerli miktar!');return;}
   const u=db.urunler.find(x=>x.id===uid);
-  var oncekiKalan=kalan(u);
   if(tip==='cikan'){if(mik>kalan(u)){toast('❗ Kalan stoktan fazla! Kalan: '+kalan(u));return;}u.cikan=(u.cikan||0)+mik;}
   else if(tip==='giris'){u.mevcut+=mik;}
   else{u.mevcut=mik+(u.cikan||0);}
-  /* Bekleyen bir sayım değeri varsa, bu meşru hareketin farkı kadar onu da kaydır ki
-     "sayım sonra eskidi, sahte fark gösterdi" durumu oluşmasın. */
-  if(db.sayim && db.sayim[uid]!==undefined && db.sayim[uid]!==''){
-    var yeniKalan=kalan(u);
-    var delta=yeniKalan-oncekiKalan;
-    db.sayim[uid]=Math.max(0,parseInt(db.sayim[uid])+delta);
-  }
   db.hareketler.push({id:db.nextHarId++,urunId:uid,tip,miktar:mik,tarih:document.getElementById('hf-tar').value,aciklama:document.getElementById('hf-ac').value.trim(),yapan:document.getElementById('hf-yp').value.trim(),ts:Date.now()});
   logEkle('hareket',(tip==='cikan'?'ÇIKIŞ':tip==='giris'?'GİRİŞ':'DÜZELTME')+': '+mik+' '+(u?u.birim:'')+' - '+(u?u.ad:''));
   try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
@@ -5069,11 +5053,7 @@ function talepCikisYap(idx){
   var eden=document.getElementById('tlp-eden').value.trim()||'';
   if(!confirm(t.mik+' '+(u.birim||'')+' '+u.ad+' stoktan çıkışı yapılacak'+(eden?' (talep eden: '+eden+')':'')+'. Onaylıyor musunuz?'))return;
   /* Stok çıkışı + hareket kaydı */
-  var oncekiKalan2=kalan(u);
   u.cikan=(u.cikan||0)+t.mik;
-  if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
-    db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+(kalan(u)-oncekiKalan2));
-  }
   var bugun=new Date();var tarStr=bugun.getFullYear()+'-'+String(bugun.getMonth()+1).padStart(2,'0')+'-'+String(bugun.getDate()).padStart(2,'0');
   db.hareketler.push({id:db.nextHarId++,urunId:u.id,tip:'cikan',miktar:t.mik,tarih:tarStr,aciklama:'Talep listesinden çıkış'+(eden?' - '+eden:''),yapan:eden||(ME?ME.ad:''),ts:Date.now()});
   t.durum='karsilandi';
@@ -5140,7 +5120,7 @@ function sayimTumunuEsitle(){
   if(!list.length){toast('Listede ürün yok');return;}
   if(!confirm(list.length+' ürünün sayılan değeri, sistemdeki mevcut değerle eşitlenecek.\n\nSadece gerçekten farklı olanları elle düzeltirsiniz.\n\nDevam edilsin mi?'))return;
   var sv=sayimVeriGet();
-  list.forEach(function(u){ sv[u.id]=kalan(u); sayimOtomatikSet[u.id]=true; });
+  list.forEach(function(u){ var k=kalan(u); sv[u.id]={miktar:k, ref:k}; sayimOtomatikSet[u.id]=true; });
   sayimBaslat();
   sayimKaydet();
   toast('✅ '+list.length+' ürün sistemdekiyle eşitlendi — farklı olanları düzeltin');
@@ -5162,6 +5142,19 @@ function sayimHemenKaydet(){
 }
 
 function sayimVeriGet(){ if(!db.sayim)db.sayim={}; return db.sayim; }
+function sayimKayitAl(id,sv){
+  /* Kayıt {miktar, ref} formatında olmalı: ref = sayıldığı ANDAKİ sistem kalanı.
+     Böylece sonradan (hangi cihazdan olursa olsun) meşru stok hareketleri
+     bu farkı bozmaz - referans SABİT kalır, cihazlar arası senkron gerekmez. */
+  var v=sv[id];
+  if(v===undefined||v==='')return null;
+  if(typeof v==='object'&&v!==null&&('miktar' in v))return v;
+  /* Eski (düz sayı) formattan göç: referansı şu anki kalan kabul et (tek seferlik) */
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
+  var yeni={miktar:parseInt(v)||0, ref:(u?kalan(u):0)};
+  sv[id]=yeni;
+  return yeni;
+}
 var sayimOtomatikSet={}; /* {urunId:true} - "tümünü eşitle" ile otomatik dolanlar (sadece görsel uyarı için, oturum bazlı) */
 var _sayimKayitZaman=null;
 function sayimKaydet(){
@@ -5214,23 +5207,25 @@ function sayimBaslat(){
   for(var i=0;i<list.length;i++){
     var u=list[i];
     var sis=kalan(u);
-    var say=(sv[u.id]!==undefined)?sv[u.id]:'';
+    var kayit=sayimKayitAl(u.id,sv);
+    var say=kayit?kayit.miktar:'';
     var oto=!!sayimOtomatikSet[u.id];
     h+='<tr>'
       +'<td data-label="Ürün" style="font-weight:600">'+e(u.ad)+(u.marka?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(u.marka)+'</div>':'')+'</td>'
       +'<td data-label="Yeri" style="font-size:12px;color:var(--tx2)">'+e(u.dolap||'—')+(u.bolme?' / '+e(u.bolme):'')+'</td>'
       +'<td data-label="Sistemdeki" style="text-align:center;font-weight:700">'+sis+'</td>'
       +'<td data-label="Sayılan" style="text-align:center"><div style="display:inline-flex;align-items:center;gap:4px"><input type="number" min="0" value="'+say+'" onchange="sayimGir('+u.id+',this.value)" oninput="sayimGir('+u.id+',this.value)" title="'+(oto?'Otomatik eşitlendi, sayılmadı — gerçek sayıyı girmek isterseniz düzeltin':'')+'" style="width:68px;height:32px;text-align:center;border:1px solid '+(oto?'#e0b84a':'var(--brd)')+';border-radius:6px;font-size:14px;font-family:inherit;background:'+(oto?'var(--amb-bg,#fff8e6)':'var(--sur)')+'"><button class="btn btn-sm" onclick="sayimGir('+u.id+','+sis+')" title="Bu ürünü sistemdekiyle eşitle ('+sis+')" style="padding:5px 6px;line-height:1">⚡</button></div>'+(oto?'<div style="font-size:9.5px;color:#a8790a;margin-top:2px">otomatik</div>':'')+'</td>'
-      +'<td data-label="Fark" style="text-align:center" id="sy-fark-'+u.id+'">'+sayimFarkHtml(u.id,sis)+'</td>'
+      +'<td data-label="Fark" style="text-align:center" id="sy-fark-'+u.id+'">'+sayimFarkHtml(u.id)+'</td>'
       +'</tr>';
   }
   tb.innerHTML=h;
   sayimOzetGuncelle();
 }
-function sayimFarkHtml(id,sis){
+function sayimFarkHtml(id){
   var sv=sayimVeriGet();
-  if(sv[id]===undefined||sv[id]==='')return '<span style="color:var(--tx3)">—</span>';
-  var fark=parseInt(sv[id])-sis;
+  var kayit=sayimKayitAl(id,sv);
+  if(!kayit)return '<span style="color:var(--tx3)">—</span>';
+  var fark=kayit.miktar-kayit.ref;
   if(fark===0)return '<span style="color:var(--grn);font-weight:700">✓ 0</span>';
   var renk=fark>0?'var(--blu)':'var(--red)';
   return '<span style="color:'+renk+';font-weight:700">'+(fark>0?'+':'')+fark+'</span>';
@@ -5239,9 +5234,13 @@ function sayimGir(id,deger){
   var sv=sayimVeriGet();
   delete sayimOtomatikSet[id]; /* elle dokunulunca "otomatik" işareti kalkar, gerçek sayım sayılır */
   if(deger===''||deger===null){delete sv[id];}
-  else{sv[id]=parseInt(deger)||0;}
-  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
-  if(u){var cell=document.getElementById('sy-fark-'+id);if(cell)cell.innerHTML=sayimFarkHtml(id,kalan(u));}
+  else{
+    var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
+    /* Referans: TAM ŞU AN sayıldığı andaki sistem kalanı. Bu değer sabit kalır,
+       sonradan başka bir cihazdan yapılan meşru hareketler bu farkı etkilemez. */
+    sv[id]={miktar:parseInt(deger)||0, ref:(u?kalan(u):0)};
+  }
+  var cell=document.getElementById('sy-fark-'+id);if(cell)cell.innerHTML=sayimFarkHtml(id);
   sayimOzetGuncelle();
   sayimKaydet();
 }
@@ -5250,15 +5249,15 @@ function sayimOzetGuncelle(){
   var list=sayimListesi();
   var sayilan=0, farkli=0, tam=0, otomatikSayi=0;
   list.forEach(function(u){
-    if(sv[u.id]!==undefined && sv[u.id]!==''){
+    var kayit=sayimKayitAl(u.id,sv);
+    if(kayit){
       sayilan++;
       if(sayimOtomatikSet[u.id])otomatikSayi++;
-      var fark=parseInt(sv[u.id])-kalan(u);
+      var fark=kayit.miktar-kayit.ref;
       if(fark===0)tam++; else farkli++;
     }
   });
   var kalanSay=list.length-sayilan;
-  var gercekSayilan=sayilan-otomatikSayi;
   document.getElementById('sy-ozet').innerHTML=
     sayimKart('Toplam Ürün',list.length,'var(--tx2)')
     +sayimKart('Sayılan',sayilan,'var(--blu)')
@@ -5287,26 +5286,34 @@ function sayimFarklariUygula(){
   var list=sayimListesi();
   var farklilar=[];
   list.forEach(function(u){
-    if(sv[u.id]!==undefined && sv[u.id]!==''){
-      var say=parseInt(sv[u.id]);
-      var sis=kalan(u);
-      if(say!==sis)farklilar.push({u:u,say:say,sis:sis,fark:say-sis});
+    var kayit=sayimKayitAl(u.id,sv);
+    if(kayit){
+      var fark=kayit.miktar-kayit.ref; /* referans anına göre TESPİT EDİLEN gerçek fark - sabit */
+      if(fark!==0)farklilar.push({u:u,fark:fark});
     }
   });
   if(!farklilar.length){toast('Düzeltilecek fark yok ✓');return;}
-  var mesaj=farklilar.length+' üründe fark var. Bu ürünlerin stok miktarı sayılan değere güncellenecek:\n\n';
-  farklilar.slice(0,8).forEach(function(f){mesaj+='• '+f.u.ad+': '+f.sis+' → '+f.say+' ('+(f.fark>0?'+':'')+f.fark+')\n';});
+  /* Farkı, ürünün ŞU ANKİ (güncel) stoğunun üzerine delta olarak uygularız.
+     Böylece aradan geçen meşru hareketler (başka cihazdan yapılmış olsa bile) kaybolmaz,
+     sadece sizin tespit ettiğiniz sayım farkı eklenir/çıkarılır. */
+  var mesaj=farklilar.length+' üründe fark tespit edildi. Bu ürünlerin güncel stoğuna, tespit edilen fark uygulanacak:\n\n';
+  farklilar.slice(0,8).forEach(function(f){
+    var mevcutKalan=kalan(f.u);
+    var yeniKalan=Math.max(0,mevcutKalan+f.fark);
+    mesaj+='• '+f.u.ad+': '+mevcutKalan+' → '+yeniKalan+' ('+(f.fark>0?'+':'')+f.fark+')\n';
+  });
   if(farklilar.length>8)mesaj+='... ve '+(farklilar.length-8)+' ürün daha\n';
   mesaj+='\nOnaylıyor musunuz?';
   if(!confirm(mesaj))return;
   var bugun=new Date();var tarStr=bugun.getFullYear()+'-'+String(bugun.getMonth()+1).padStart(2,'0')+'-'+String(bugun.getDate()).padStart(2,'0');
   farklilar.forEach(function(f){
     var u=f.u;
-    /* Sayılan değere ulaşmak için mevcut'u ayarla: kalan = mevcut - cikan => mevcut = say + cikan */
-    u.mevcut=f.say+(u.cikan||0);
+    var mevcutKalan=kalan(u);
+    var yeniKalan=Math.max(0,mevcutKalan+f.fark);
+    u.mevcut=yeniKalan+(u.cikan||0);
     /* Sayım yapıldıysa durum otomatik'e çekilsin (sayılmamış işareti kalktı) */
     if(u.durum_tip==='sayilmamis')u.durum_tip='normal';
-    db.hareketler.push({id:db.nextHarId++,urunId:u.id,tip:'duzeltme',miktar:Math.abs(f.fark),tarih:tarStr,aciklama:'Sayım düzeltmesi ('+f.sis+'→'+f.say+')',yapan:(ME?ME.ad:''),ts:Date.now()});
+    db.hareketler.push({id:db.nextHarId++,urunId:u.id,tip:'duzeltme',miktar:Math.abs(f.fark),tarih:tarStr,aciklama:'Sayım düzeltmesi ('+mevcutKalan+'→'+yeniKalan+')',yapan:(ME?ME.ad:''),ts:Date.now()});
     sbUrunKaydetTek(u.id);
   });
   try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
@@ -5504,11 +5511,7 @@ function oduncEkle(){
     var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===stokId){u=db.urunler[i];break;}}
     if(u){
       if(kalan(u)<mik){toast('⚠️ Stokta yeterli yok! (kalan: '+kalan(u)+')');return;}
-      var oncekiKalan3=kalan(u);
       u.cikan=(u.cikan||0)+mik;
-      if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
-        db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+(kalan(u)-oncekiKalan3));
-      }
       sbUrunKaydetTek(u.id);
     }
   }
@@ -5541,11 +5544,7 @@ function oduncIadeEt(id){
   if(k.stokDus && k.stokId){
     var u=null; for(var j=0;j<db.urunler.length;j++){if(db.urunler[j].id===k.stokId){u=db.urunler[j];break;}}
     if(u){
-      var oncekiKalan4=kalan(u);
       u.cikan=Math.max(0,(u.cikan||0)-k.mik);
-      if(db.sayim && db.sayim[u.id]!==undefined && db.sayim[u.id]!==''){
-        db.sayim[u.id]=Math.max(0,parseInt(db.sayim[u.id])+(kalan(u)-oncekiKalan4));
-      }
       sbUrunKaydetTek(u.id);
     }
   }
