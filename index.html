@@ -106,7 +106,9 @@ tbody tr:hover{background:#d0eddf !important}
 .p-ns{background:#f0f0ee;color:var(--tx3)}
 .p-one{background:var(--pur-bg);color:var(--pur)}
 .p-say{background:#e5f0fb;color:#1255a0}
+.p-hurda{background:#e5e5e5;color:#5a5a5a}
 .sel-say{border-color:#1255a0;background:#e5f0fb}
+.sel-hurda{border-color:#5a5a5a;background:#e5e5e5}
 /* Kat chips */
 .kc{font-size:11.5px;padding:2px 7px;border-radius:20px;font-weight:600;white-space:nowrap}
 /* Hareket log */
@@ -167,6 +169,7 @@ tbody tr:hover{background:#d0eddf !important}
 .dur-b.sel-say .dur-radio{background:#1255a0;border-color:#1255a0}
 .sel-say .dur-radio{background:#1255a0;border-color:#1255a0}
 .dur-b.sel-say{border-color:#1255a0;background:#e5f0fb}
+.sel-hurda{border-color:#5a5a5a;background:#e5e5e5}
 /* Taşıma modal */
 .tasima-info{background:var(--grn-bg);border:1px solid #a0d0b8;border-radius:var(--rsm);padding:9px 11px;font-size:13px;color:var(--grn-dk);margin-bottom:12px}
 /* Dolap sayfası */
@@ -519,6 +522,7 @@ body.dark .rt td{color:var(--tx)}
           <option value="out">Tükendi</option>
           <option value="one">Önemsiz</option>
           <option value="say">Sayılmamış</option>
+          <option value="hurda">Hurdaya Ayrıldı</option>
         </select>
         <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#dc2626" title="Sadece demirbaş kaynaklı ürünleri göster">
           <input type="checkbox" id="flt-demirbas" onchange="renderStok()" style="width:15px;height:15px;accent-color:#dc2626"> 🏷 Sadece Demirbaş
@@ -630,6 +634,7 @@ body.dark .rt td{color:var(--tx)}
         <div class="dur-b" id="dur-out" onclick="selDur('tuikendi')"><div class="dur-radio"></div><span>🔴 Tükendi</span></div>
         <div class="dur-b" id="dur-one" onclick="selDur('onemsiz')"><div class="dur-radio"></div><span>⚪ Önemsiz</span></div>
         <div class="dur-b" id="dur-say" onclick="selDur('sayilmamis')"><div class="dur-radio"></div><span>🔵 Sayılmamış</span></div>
+        <div class="dur-b" id="dur-hurda" onclick="selDur('hurda')"><div class="dur-radio"></div><span>🗑 Hurdaya Ayrıldı</span></div>
       </div>
       <div class="fhint" style="margin-top:6px">"Otomatik" seçilirse stok miktarına göre hesaplanır. Diğerleri manuel override yapar.</div>
     </div>
@@ -4064,6 +4069,7 @@ function updArr(){['ad','marka','mevcut','kalan','dolap'].forEach(c=>{const a=do
 function kalan(u){return u.mevcut-(u.cikan||0);}
 function durum(u){
   const dt=u.durum_tip||'normal';
+  if(dt==='hurda') return {l:'Hurdaya Ayrıldı',c:'p-hurda',k:'hurda'};
   if(dt==='sayilmamis') return {l:'Sayılmamış',c:'p-say',k:'say'};
   if(dt==='onemsiz') return {l:'Önemsiz',c:'p-one',k:'one'};
   if(dt==='tuikendi'||dt==='tukendi') return {l:'Tükendi',c:'p-out',k:'out'};
@@ -4417,8 +4423,8 @@ function renderDolaplar(){
 let secilenDur='normal';
 function selDur(tip){
   secilenDur=tip;
-  ['ok','low','out','one','say'].forEach(k=>{var el=document.getElementById('dur-'+k);if(el)el.className='dur-b';});
-  const map={normal:'ok',kritik:'low',tuikendi:'out',onemsiz:'one',sayilmamis:'say'};
+  ['ok','low','out','one','say','hurda'].forEach(k=>{var el=document.getElementById('dur-'+k);if(el)el.className='dur-b';});
+  const map={normal:'ok',kritik:'low',tuikendi:'out',onemsiz:'one',sayilmamis:'say',hurda:'hurda'};
   const k=map[tip]||'ok';
   document.getElementById('dur-'+k).className='dur-b sel-'+k;
 }
