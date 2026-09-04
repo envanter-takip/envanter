@@ -152,6 +152,7 @@ tbody tr:hover{background:#d0eddf !important}
 .ht-b.sc{border-color:var(--red);background:var(--red-bg);color:var(--red)}
 .ht-b.sg{border-color:var(--grn);background:var(--grn-bg);color:var(--grn-dk)}
 .ht-b.sd{border-color:var(--amb);background:var(--amb-bg);color:var(--amb)}
+.sh{border-color:#5a5a5a;background:#e5e5e5;color:#5a5a5a}
 .ht-i{font-size:17px}.ht-l{font-size:11.5px;font-weight:700;margin-top:3px}
 /* Durum seçimi - radyo butonlar */
 .dur-g{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
@@ -562,6 +563,7 @@ body.dark .rt td{color:var(--tx)}
           <option value="cikan">Çıkış</option>
           <option value="giris">Giriş</option>
           <option value="duzeltme">Düzeltme</option>
+          <option value="hurda">Hurda</option>
         </select>
         <div class="sp"></div>
         <button class="btn btn-p" onclick="openHarModal(null)">+ Yeni Hareket</button>
@@ -672,14 +674,16 @@ body.dark .rt td{color:var(--tx)}
 <div class="ov" id="m-h"><div class="modal modal-sm">
   <div class="mh"><h3>Stok Hareketi</h3><button class="mx" onclick="CM('m-h')">×</button></div>
   <div class="mb">
-    <div class="f"><label>Ürün *</label><select id="hf-u"><option value="">— Ürün seçin —</option></select></div>
+    <div class="f"><label>Ürün *</label><select id="hf-u" onchange="hfUrunDegisti()"><option value="">— Ürün seçin —</option></select></div>
     <div class="ht-g">
       <div class="ht-b sc" id="ht-c" onclick="sHT('cikan')"><div class="ht-i">📤</div><div class="ht-l">Çıkış</div></div>
       <div class="ht-b" id="ht-g" onclick="sHT('giris')"><div class="ht-i">📥</div><div class="ht-l">Giriş</div></div>
       <div class="ht-b" id="ht-d" onclick="sHT('duzeltme')"><div class="ht-i">🔧</div><div class="ht-l">Düzeltme</div></div>
+      <div class="ht-b" id="ht-h" onclick="sHT('hurda')" style="display:none"><div class="ht-i">🗑</div><div class="ht-l">Hurdaya Ayır</div></div>
     </div>
     <input type="hidden" id="hf-tip" value="cikan">
     <div id="duz-note" style="display:none" class="note">Düzeltme: Kalan stoğu yeni değere ayarlar.</div>
+    <div id="hurda-note" style="display:none" class="note">🗑 Hurdaya Ayır: Kalan stoğu düşürür VE ürünü otomatik "Hurdaya Ayrıldı" olarak işaretler. Bu demirbaş bir daha aktif stokta görünmez.</div>
     <div class="fg2">
       <div class="f"><label id="hf-ml">Miktar *</label><input id="hf-mik" type="number" min="0" placeholder="0"></div>
       <div class="f"><label>Tarih</label><input id="hf-tar" type="date"></div>
@@ -4365,7 +4369,7 @@ function renderHar(){
     const u=db.urunler.find(x=>x.id===h.urunId);
     const uA=u?u.ad:'(#'+h.urunId+')';
     const uL=u?(u.dolap||'')+(u.bolme?' / '+u.bolme:''):'';
-    const tb=h.tip==='cikan'?'<span class="bh-c">📤 Çıkış</span>':h.tip==='giris'?'<span class="bh-g">📥 Giriş</span>':'<span class="bh-d">🔧 Düzeltme</span>';
+    const tb=h.tip==='cikan'?'<span class="bh-c">📤 Çıkış</span>':h.tip==='giris'?'<span class="bh-g">📥 Giriş</span>':h.tip==='hurda'?'<span class="bh-d" style="background:#e5e5e5;color:#5a5a5a">🗑 Hurda</span>':'<span class="bh-d">🔧 Düzeltme</span>';
     const dt=new Date(h.ts);
     const ds=dt.toLocaleDateString('tr-TR')+' '+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
     return '<tr>'+
@@ -4588,9 +4592,32 @@ function sHT(t){harTip=t;document.getElementById('hf-tip').value=t;
   document.getElementById('ht-c').className='ht-b'+(t==='cikan'?' sc':'');
   document.getElementById('ht-g').className='ht-b'+(t==='giris'?' sg':'');
   document.getElementById('ht-d').className='ht-b'+(t==='duzeltme'?' sd':'');
+  var htH=document.getElementById('ht-h'); if(htH)htH.className='ht-b'+(t==='hurda'?' sh':'');
   document.getElementById('duz-note').style.display=t==='duzeltme'?'block':'none';
+  var hn=document.getElementById('hurda-note'); if(hn)hn.style.display=t==='hurda'?'block':'none';
   document.getElementById('hf-ml').textContent=t==='duzeltme'?'Yeni Kalan *':'Miktar *';
+  /* Hurda seçilince miktarı otomatik ürünün TÜM kalanına doldur (genelde tamamı hurdaya gider) */
+  if(t==='hurda'){
+    var uid2=parseInt(document.getElementById('hf-u').value);
+    var uu=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===uid2){uu=db.urunler[i];break;}}
+    if(uu)document.getElementById('hf-mik').value=kalan(uu);
+  }
 }
+
+function hfUrunDegisti(){
+  var uid=parseInt(document.getElementById('hf-u').value);
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===uid){u=db.urunler[i];break;}}
+  var htH=document.getElementById('ht-h');
+  if(htH){
+    if(u && u.demirbas){ htH.style.display='flex'; }
+    else{
+      htH.style.display='none';
+      /* Demirbaş olmayan bir ürüne geçildiğinde, yanlışlıkla "hurda" seçili kalmasın */
+      if(harTip==='hurda')sHT('cikan');
+    }
+  }
+}
+
 function openHarModal(uid=null){
   const sel=document.getElementById('hf-u');
   const sorted=[...db.dolaplar].sort((a,b)=>(a.sira||0)-(b.sira||0));
@@ -4599,7 +4626,7 @@ function openHarModal(uid=null){
   sel.innerHTML='<option value="">— Ürün seçin —</option>'+sortedU.map(u=>'<option value="'+u.id+'"'+(u.id===uid?' selected':'')+'>#'+u.id+' '+e(u.ad)+'</option>').join('');
   document.getElementById('hf-mik').value='';document.getElementById('hf-ac').value='';document.getElementById('hf-yp').value='';
   document.getElementById('hf-tar').value=new Date().toISOString().slice(0,10);
-  sHT('cikan');OM('m-h');
+  sHT('cikan');hfUrunDegisti();OM('m-h');
 }
 function saveHar(){
   const uid=parseInt(document.getElementById('hf-u').value);
@@ -4610,9 +4637,14 @@ function saveHar(){
   const u=db.urunler.find(x=>x.id===uid);
   if(tip==='cikan'){if(mik>kalan(u)){toast('❗ Kalan stoktan fazla! Kalan: '+kalan(u));return;}u.cikan=(u.cikan||0)+mik;}
   else if(tip==='giris'){u.mevcut+=mik;}
+  else if(tip==='hurda'){
+    if(mik>kalan(u)){toast('❗ Kalan stoktan fazla! Kalan: '+kalan(u));return;}
+    u.cikan=(u.cikan||0)+mik;
+    u.durum_tip='hurda'; /* otomatik "Hurdaya Ayrıldı" işaretle */
+  }
   else{u.mevcut=mik+(u.cikan||0);}
   db.hareketler.push({id:db.nextHarId++,urunId:uid,tip,miktar:mik,tarih:document.getElementById('hf-tar').value,aciklama:document.getElementById('hf-ac').value.trim(),yapan:document.getElementById('hf-yp').value.trim(),ts:Date.now()});
-  logEkle('hareket',(tip==='cikan'?'ÇIKIŞ':tip==='giris'?'GİRİŞ':'DÜZELTME')+': '+mik+' '+(u?u.birim:'')+' - '+(u?u.ad:''));
+  logEkle('hareket',(tip==='cikan'?'ÇIKIŞ':tip==='giris'?'GİRİŞ':tip==='hurda'?'HURDAYA AYRILDI':'DÜZELTME')+': '+mik+' '+(u?u.birim:'')+' - '+(u?u.ad:''));
   try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
   sbUrunKaydetTek(uid);sbAyarKaydet();CM('m-h');renderStok();
   if(document.getElementById('page-har').classList.contains('on'))renderHar();
