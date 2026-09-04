@@ -5149,9 +5149,13 @@ function sayimKayitAl(id,sv){
   var v=sv[id];
   if(v===undefined||v==='')return null;
   if(typeof v==='object'&&v!==null&&('miktar' in v))return v;
-  /* Eski (düz sayı) formattan göç: referansı şu anki kalan kabul et (tek seferlik) */
-  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
-  var yeni={miktar:parseInt(v)||0, ref:(u?kalan(u):0)};
+  /* Eski (düz sayı) formattan göç: referansı SAYININ KENDİSİ kabul et (fark=0).
+     ÖNEMLİ: "şu anki stok" gibi cihaza/zamana bağlı bir değer KULLANILMAZ -
+     aksi halde masaüstü ve mobil bu göçü farklı anlarda yapıp FARKLI referanslar
+     üretir ve aynı veri iki cihazda farklı "fark" gösterir (yaşanan hata buydu).
+     Sayının kendisini referans almak, hangi cihaz/ne zaman çevirirse çevirsin
+     HER ZAMAN aynı (tutarlı) sonucu garanti eder. */
+  var yeni={miktar:parseInt(v)||0, ref:parseInt(v)||0};
   sv[id]=yeni;
   return yeni;
 }
@@ -5169,8 +5173,24 @@ function sayimAc(){
   var sorted=db.dolaplar.slice().sort(function(a,b){return (a.sira||0)-(b.sira||0);});
   sd.innerHTML='<option value="">Tüm Dolaplar</option>'+sorted.map(function(d){return '<option>'+e(d.ad)+'</option>';}).join('');
   document.getElementById('sy-raf').innerHTML='<option value="">Tüm Raflar</option>';
+  sayimEskiFormatGoc();
   sayimBaslat();
   OM('m-sayim');
+}
+function sayimEskiFormatGoc(){
+  /* Eski (düz sayı) formatındaki sayım kayıtlarını {miktar,ref} formatına TEK SEFERLİK göç ettirir
+     ve HEMEN buluta kaydeder. Böylece hangi cihaz önce açarsa o göçü yapar, diğer cihazlar
+     zaten göçmüş (aynı) veriyi görür - cihazlar arası sapma oluşmaz. */
+  var sv=sayimVeriGet();
+  var degisti=false;
+  Object.keys(sv).forEach(function(k){
+    var v=sv[k];
+    if(v!==undefined && v!=='' && !(typeof v==='object' && v!==null && ('miktar' in v))){
+      sayimKayitAl(parseInt(k),sv); /* obje formatına çevirir, sv[k]'yi günceller */
+      degisti=true;
+    }
+  });
+  if(degisti){ sayimKaydet(); }
 }
 function sayimDolapDegis(){
   var dolapAd=document.getElementById('sy-dolap').value;
