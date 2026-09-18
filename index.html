@@ -3585,11 +3585,10 @@ function sbBaslat(done){
           if(r.key==='hareketler' && r.data) db.hareketler=r.data;
           if(r.key==='odunc' && r.data) db.odunc=r.data;
           if(r.key==='sayim' && r.data){
-            /* Çakışma önleme: gelen bulut verisi yerel (henüz kaydedilmemiş olabilecek) sayım
-               girdilerinin ÜZERİNE YAZMASIN. Yerel girdiler her zaman öncelikli kalır,
-               bulut sadece başkasının girdiği YENİ ürünleri ekler. */
-            var yerelSayim=db.sayim||{};
-            db.sayim=Object.assign({},r.data,yerelSayim);
+            /* Çakışma önleme: her kayıt bazında (ürün başına) EN YENİ (ts) zaman damgalı
+               olan kazanır - "yerel her zaman kazansın" yerine "en son yapılan kazansın".
+               Böylece hangi cihazdan yapılırsa yapılsın, gerçekten en güncel sayım kalır. */
+            db.sayim=sayimMergeAl(r.data, db.sayim||{});
           }
           if(r.key==='talepListe' && r.data) db.talepListe=r.data;
           if(r.key==='alimListe' && r.data){
@@ -5180,6 +5179,26 @@ function sayimHemenKaydet(){
   });
 }
 
+
+function sayimMergeAl(bulut,yerel){
+  /* Her ürün kaydı için EN YENİ zaman damgalı (ts) değer kazanır.
+     ts yoksa (eski/göçmemiş veri) en düşük öncelikli kabul edilir. */
+  var sonuc={};
+  var tumAnahtar={};
+  Object.keys(bulut||{}).forEach(function(k){tumAnahtar[k]=1;});
+  Object.keys(yerel||{}).forEach(function(k){tumAnahtar[k]=1;});
+  Object.keys(tumAnahtar).forEach(function(k){
+    var b=bulut?bulut[k]:undefined;
+    var y=yerel?yerel[k]:undefined;
+    if(b===undefined){sonuc[k]=y;return;}
+    if(y===undefined){sonuc[k]=b;return;}
+    var bt=(b&&typeof b==='object'&&b.ts)||0;
+    var yt=(y&&typeof y==='object'&&y.ts)||0;
+    sonuc[k]=(yt>=bt)?y:b; /* eşitlikte yerel kazansın (o an aktif yazıyor olabilir) */
+  });
+  return sonuc;
+}
+
 function sayimVeriGet(){ if(!db.sayim)db.sayim={}; return db.sayim; }
 function sayimKayitAl(id,sv){
   /* Kayıt {miktar, ref} formatında olmalı: ref = sayıldığı ANDAKİ sistem kalanı.
@@ -5194,7 +5213,7 @@ function sayimKayitAl(id,sv){
      üretir ve aynı veri iki cihazda farklı "fark" gösterir (yaşanan hata buydu).
      Sayının kendisini referans almak, hangi cihaz/ne zaman çevirirse çevirsin
      HER ZAMAN aynı (tutarlı) sonucu garanti eder. */
-  var yeni={miktar:parseInt(v)||0, ref:parseInt(v)||0};
+  var yeni={miktar:parseInt(v)||0, ref:parseInt(v)||0, ts:0};
   sv[id]=yeni;
   return yeni;
 }
