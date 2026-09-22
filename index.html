@@ -614,7 +614,7 @@ body.dark .rt td{color:var(--tx)}
       <div class="f"><label>Kategori</label><select id="fu-kat">
         <option>Elektronik</option><option>Ağ &amp; İletişim</option><option>Kablo &amp; Bağlantı</option>
         <option>Araç-Gereç</option><option>Sarf Malzeme</option><option>Güvenlik &amp; KKD</option>
-        <option>Kırtasiye</option><option>Temizlik</option><option>Diğer</option>
+        <option>Kırtasiye</option><option>Temizlik</option><option>Veri Silme</option><option>Diğer</option>
       </select></div>
     </div>
     <div class="sec">Stok</div>
@@ -910,6 +910,7 @@ body.dark .rt td{color:var(--tx)}
       <button class="btn rapor-tab" data-r="kategori" onclick="raporGoster('kategori')">🏷 Kategori Dağılımı</button>
       <button class="btn rapor-tab" data-r="donemsel" onclick="raporGoster('donemsel')">📅 Dönemsel Hareket</button>
       <button class="btn rapor-tab" data-r="oludstok" onclick="raporGoster('oludstok')">💤 Hareketsiz Ürünler</button>
+      <button class="btn rapor-tab" data-r="yinelenen" onclick="raporGoster('yinelenen')">🔁 Yinelenen Ürünler</button>
       <button class="btn rapor-tab" onclick="CM('m-rapor');demirbasAc()">🏷 Demirbaş Ürünler</button>
       <button class="btn rapor-tab" data-r="ozet" onclick="raporGoster('ozet')">📋 Genel Özet</button>
     </div>
@@ -1037,7 +1038,7 @@ body.dark .rt td{color:var(--tx)}
     <div class="f" style="margin-bottom:12px"><label>Kategori Değiştir</label>
       <select id="tg-kat">
         <option value="">— Değiştirme —</option>
-        <option>Elektronik</option><option>Ağ & İletişim</option><option>Kablo & Bağlantı</option><option>Araç-Gereç</option><option>Sarf Malzeme</option><option>Güvenlik & KKD</option><option>Kırtasiye</option><option>Temizlik</option><option>Diğer</option>
+        <option>Elektronik</option><option>Ağ & İletişim</option><option>Kablo & Bağlantı</option><option>Araç-Gereç</option><option>Sarf Malzeme</option><option>Güvenlik & KKD</option><option>Kırtasiye</option><option>Temizlik</option><option>Veri Silme</option><option>Diğer</option>
       </select></div>
 
     <div class="f" style="margin-bottom:12px"><label>Durum Tipi Değiştir</label>
@@ -4179,7 +4180,7 @@ function girisBildirim(){
 }
 
 // ---- Kat Chip ----
-const KATS={'Elektronik':'background:#f0ebfd;color:#5e35b1','Ağ & İletişim':'background:#e5f0fb;color:#1255a0','Kablo & Bağlantı':'background:#e4f5ee;color:#085e3e','Araç-Gereç':'background:#fdefd5;color:#9a5e08','Sarf Malzeme':'background:#f2f2f0;color:#505050','Güvenlik & KKD':'background:#fceaea;color:#b83030','Kırtasiye':'background:#fefce8;color:#a16207','Temizlik':'background:#f0fdf4;color:#166534','Diğer':'background:#f2f2f0;color:#505050'};
+const KATS={'Elektronik':'background:#f0ebfd;color:#5e35b1','Ağ & İletişim':'background:#e5f0fb;color:#1255a0','Kablo & Bağlantı':'background:#e4f5ee;color:#085e3e','Araç-Gereç':'background:#fdefd5;color:#9a5e08','Sarf Malzeme':'background:#f2f2f0;color:#505050','Güvenlik & KKD':'background:#fceaea;color:#b83030','Kırtasiye':'background:#fefce8;color:#a16207','Temizlik':'background:#f0fdf4;color:#166534','Veri Silme':'background:#fde8e8;color:#a12626','Diğer':'background:#f2f2f0;color:#505050'};
 function kChip(k){const s=KATS[k]||KATS['Diğer'];return'<span class="kc" style="'+s+'">'+e(k)+'</span>';}
 
 // ---- Sıra No hesaplama ----
@@ -6263,6 +6264,35 @@ var pastaK=Object.keys(grup).sort().map(function(k){return {ad:k,deger:grup[k].a
         +'<td style="text-align:center;font-size:12px">'+sonMetin+'</td></tr>';
     }
     h+='</tbody></table>';
+  } else if(tip==='yinelenen'){
+    bas.textContent='🔁 Yinelenen Ürünler';
+    alt.textContent='Aynı isim, aynı dolap ve aynı rafta birden fazla kayıt bulunan ürünler';
+    var grupY={};
+    db.urunler.forEach(function(u){
+      var anahtar=trkc(u.ad)+'|'+trkc(u.dolap||'')+'|'+trkc(u.bolme||'');
+      if(!grupY[anahtar])grupY[anahtar]=[];
+      grupY[anahtar].push(u);
+    });
+    var yinelenenGruplar=Object.keys(grupY).map(function(k){return grupY[k];}).filter(function(g){return g.length>1;});
+    if(yinelenenGruplar.length===0){
+      h='<div style="text-align:center;color:var(--grn);padding:30px;font-weight:600">✓ Yinelenen kayıt bulunamadı — veriniz temiz!</div>';
+    } else {
+      h='<div style="background:var(--amb-bg);border:1px solid var(--brd);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--tx2)">'
+        +'⚠️ <b>'+yinelenenGruplar.length+'</b> grup yinelenen kayıt bulundu ('+yinelenenGruplar.reduce(function(s,g){return s+g.length;},0)+' ürün). Muhtemelen aynı malzeme yanlışlıkla birden fazla kez eklenmiş. Gereksiz olanları silin.</div>';
+      yinelenenGruplar.forEach(function(grup,gi){
+        h+='<div style="background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:12px 14px;margin-bottom:12px">';
+        h+='<div style="font-weight:700;font-size:13.5px;margin-bottom:8px">'+e(grup[0].ad)+' <span style="font-weight:400;color:var(--tx3);font-size:12px">— '+e(grup[0].dolap||'Dolapsız')+(grup[0].bolme?' / '+e(grup[0].bolme):'')+'</span></div>';
+        h+='<table class="rt" style="margin:0"><thead><tr><th>Marka</th><th style="text-align:center">Mevcut</th><th style="text-align:center">Çıkan</th><th style="text-align:center">Kalan</th><th style="text-align:center">İşlem</th></tr></thead><tbody>';
+        grup.forEach(function(u){
+          h+='<tr><td style="font-size:12.5px">'+e(u.marka||'—')+'</td>'
+            +'<td style="text-align:center">'+u.mevcut+'</td>'
+            +'<td style="text-align:center">'+(u.cikan||0)+'</td>'
+            +'<td style="text-align:center;font-weight:700">'+kalan(u)+'</td>'
+            +'<td style="text-align:center"><button class="btn btn-sm btn-ed" onclick="CM(\'m-rapor\');openUrunModal('+u.id+')">✏️</button> <button class="btn btn-sm btn-del" onclick="konfirmSilUrun('+u.id+');setTimeout(function(){raporGoster(\'yinelenen\');},400)">🗑</button></td></tr>';
+        });
+        h+='</tbody></table></div>';
+      });
+    }
   } else if(tip==='ozet'){
     bas.textContent='📋 Genel Özet';
     alt.textContent='Envanterin genel durumu';
