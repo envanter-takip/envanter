@@ -524,6 +524,7 @@ body.dark .rt td{color:var(--tx)}
           <option value="one">Önemsiz</option>
           <option value="say">Sayılmamış</option>
           <option value="hurda">Hurdaya Ayrıldı</option>
+          <option value="yinelenen">🔁 Yinelenen Kayıtlar</option>
         </select>
         <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#dc2626" title="Sadece demirbaş kaynaklı ürünleri göster">
           <input type="checkbox" id="flt-demirbas" onchange="renderStok()" style="width:15px;height:15px;accent-color:#dc2626"> 🏷 Sadece Demirbaş
@@ -564,6 +565,8 @@ body.dark .rt td{color:var(--tx)}
           <option value="giris">Giriş</option>
           <option value="duzeltme">Düzeltme</option>
           <option value="hurda">Hurda</option>
+          <option value="duzenlendi">Ürün Düzenlendi</option>
+          <option value="silindi">Ürün Silindi</option>
         </select>
         <div class="sp"></div>
         <button class="btn btn-p" onclick="openHarModal(null)">+ Yeni Hareket</button>
@@ -4249,11 +4252,24 @@ function renderStok(){
   const fk=document.getElementById('flt-k').value;
   const fdur=document.getElementById('flt-dur').value;
   const fdemirbas=document.getElementById('flt-demirbas').checked;
+  /* Yinelenen (aynı isim+dolap+raf) filtresi için gruplama */
+  var yinelenenIdSet=null;
+  if(fdur==='yinelenen'){
+    var grupY2={};
+    db.urunler.forEach(function(uu){
+      var anahtar=trkc(uu.ad)+'|'+trkc(uu.dolap||'')+'|'+trkc(uu.bolme||'');
+      if(!grupY2[anahtar])grupY2[anahtar]=[];
+      grupY2[anahtar].push(uu.id);
+    });
+    yinelenenIdSet=new Set();
+    Object.keys(grupY2).forEach(function(k){ if(grupY2[k].length>1) grupY2[k].forEach(function(id){yinelenenIdSet.add(id);}); });
+  }
   let list=db.urunler.filter(u=>{
     if(fd&&u.dolap!==fd)return false;
     if(fb&&String(u.bolme||'')!==fb)return false;
     if(fk&&u.kat!==fk)return false;
-    if(fdur&&durum(u).k!==fdur)return false;
+    if(fdur==='yinelenen'){ if(!yinelenenIdSet.has(u.id))return false; }
+    else if(fdur&&durum(u).k!==fdur)return false;
     if(fdemirbas&&!u.demirbas)return false;
     if(q){const h=trkc([u.ad,u.marka,u.dolap,u.bolme,u.sku,u.kat].join(' '));if(!h.includes(q))return false;}
     return true;
@@ -4359,7 +4375,7 @@ function renderHar(){
   const ft=document.getElementById('hft').value;
   let list=[...db.hareketler].filter(h=>{
     if(ft&&h.tip!==ft)return false;
-    if(q){const u=db.urunler.find(x=>x.id===h.urunId);const h2=trkc([(u&&u.ad)||'',h.aciklama||'',h.yapan||''].join(' '));if(!h2.includes(q))return false;}
+    if(q){const u=db.urunler.find(x=>x.id===h.urunId);const adAra=(u&&u.ad)||h.urunAdiSnapshot||'';const h2=trkc([adAra,h.aciklama||'',h.yapan||''].join(' '));if(!h2.includes(q))return false;}
     return true;
   }).sort((a,b)=>b.ts-a.ts);
   const tbody=document.getElementById('har-tbody');
@@ -4367,21 +4383,29 @@ function renderHar(){
   document.getElementById('har-empty').style.display='none';
   tbody.innerHTML=list.map(h=>{
     const u=db.urunler.find(x=>x.id===h.urunId);
-    const uA=u?u.ad:'(#'+h.urunId+')';
-    const uL=u?(u.dolap||'')+(u.bolme?' / '+u.bolme:''):'';
-    const tb=h.tip==='cikan'?'<span class="bh-c">📤 Çıkış</span>':h.tip==='giris'?'<span class="bh-g">📥 Giriş</span>':h.tip==='hurda'?'<span class="bh-d" style="background:#e5e5e5;color:#5a5a5a">🗑 Hurda</span>':'<span class="bh-d">🔧 Düzeltme</span>';
+    /* Silinmiş bir ürünse, silinme anında saklanan isim (urunAdiSnapshot) kullanılır -
+       böylece ürün silindikten sonra da Hareket Geçmişi'nde adı okunabilir kalır. */
+    const uA=u?u.ad:(h.urunAdiSnapshot||('(#'+h.urunId+')'));
+    const uL=u?(u.dolap||'')+(u.bolme?' / '+u.bolme:''):(h.tip==='silindi'?'(silindi)':'');
+    const tb=h.tip==='cikan'?'<span class="bh-c">📤 Çıkış</span>'
+      :h.tip==='giris'?'<span class="bh-g">📥 Giriş</span>'
+      :h.tip==='hurda'?'<span class="bh-d" style="background:#e5e5e5;color:#5a5a5a">🗑 Hurda</span>'
+      :h.tip==='duzenlendi'?'<span class="bh-d" style="background:#e5f0fb;color:#1255a0">✏️ Düzenlendi</span>'
+      :h.tip==='silindi'?'<span class="bh-d" style="background:#fceaea;color:#b83030">❌ Silindi</span>'
+      :'<span class="bh-d">🔧 Düzeltme</span>';
     const dt=new Date(h.ts);
     const ds=dt.toLocaleDateString('tr-TR')+' '+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const miktarGoster=(h.tip==='duzenlendi'||h.tip==='silindi')?'—':(h.miktar+' '+(u?e(u.birim):''));
     return '<tr>'+
       '<td data-label="Tarih" style="font-size:12px;color:var(--tx2);white-space:nowrap">'+ds+'</td>'+
       '<td data-label="Ürün" style="font-weight:600">'+e(uA)+'</td>'+
       '<td data-label="Dolap/Bölme" style="font-size:12px;color:var(--tx2)">'+e(uL)+'</td>'+
       '<td data-label="Tip">'+tb+'</td>'+
-      '<td data-label="Miktar" style="text-align:right;font-weight:700">'+h.miktar+' '+(u?e(u.birim):'')+'</td>'+
+      '<td data-label="Miktar" style="text-align:right;font-weight:700">'+miktarGoster+'</td>'+
       '<td data-label="Açıklama" style="color:var(--tx2)">'+e(h.aciklama||'—')+'</td>'+
       '<td data-label="Yapan" style="color:var(--tx2)">'+e(h.yapan||'—')+'</td>'+
       '<td class="mob-acts"><div class="td-acts">'+
-        '<button class="btn btn-sm btn-warn" onclick="openHarEdit('+h.id+')" title="Düzenle">✏️</button>'+
+        (h.tip==='duzenlendi'||h.tip==='silindi'?'':'<button class="btn btn-sm btn-warn" onclick="openHarEdit('+h.id+')" title="Düzenle">✏️</button>')+
         '<button class="btn btn-sm btn-del" onclick="konfirmSilHar('+h.id+')" title="Sil">🗑</button>'+
       '</div></td></tr>';
   }).join('');
@@ -4527,6 +4551,7 @@ function saveUrun(){
     }
     Object.assign(u,data);
     kayitId=editUID;
+    db.hareketler.push({id:db.nextHarId++,urunId:u.id,tip:'duzenlendi',miktar:0,tarih:new Date().toISOString().slice(0,10),aciklama:'Ürün bilgileri güncellendi',yapan:(ME?ME.ad:''),ts:Date.now()});
     logEkle('urun-duzenle','Ürün güncellendi: '+data.ad);
     toast('✅ Ürün güncellendi');
   } else {
@@ -4544,7 +4569,16 @@ function saveUrun(){
 function konfirmSilUrun(id){
   const u=db.urunler.find(x=>x.id===id);
   konfirm('Ürünü Sil','"'+u.ad+'" silinecek. Bu işlem geri alınamaz.','🗑 Sil',()=>{
-    var silU=db.urunler.find(x=>x.id===id);logEkle('urun-sil','Ürün silindi: '+(silU?silU.ad:id));db.urunler=db.urunler.filter(x=>x.id!==id);if(typeof sbUrunSilBulut==='function')sbUrunSilBulut(id);try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}sbAyarKaydet();renderStok();toast('🗑 Ürün silindi');
+    var silU=db.urunler.find(x=>x.id===id);
+    var silinenAd=silU?silU.ad:('#'+id);
+    /* Silinen ürünün adını hareket kaydında SABİT metin olarak saklıyoruz ki
+       ürün silindikten sonra bile Hareket Geçmişi'nde adı okunabilir kalsın. */
+    db.hareketler.push({id:db.nextHarId++,urunId:id,tip:'silindi',miktar:0,tarih:new Date().toISOString().slice(0,10),aciklama:'Ürün kaydı silindi',urunAdiSnapshot:silinenAd,yapan:(ME?ME.ad:''),ts:Date.now()});
+    logEkle('urun-sil','Ürün silindi: '+silinenAd);
+    db.urunler=db.urunler.filter(x=>x.id!==id);
+    if(typeof sbUrunSilBulut==='function')sbUrunSilBulut(id);
+    try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
+    sbAyarKaydet();renderStok();toast('🗑 Ürün silindi');
   });
 }
 
