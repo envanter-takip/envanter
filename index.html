@@ -3752,16 +3752,30 @@ function sbUrunKaydetTek(id){
 function sbAyarKaydet(){
   if(!SB_HAZIR)return;
   var ts=new Date().toISOString();
-  sbUpsert('ayarlar',[
-    {key:'dolaplar',data:db.dolaplar,updated_at:ts},
-    {key:'hareketler',data:db.hareketler,updated_at:ts},
-    {key:'odunc',data:db.odunc||[],updated_at:ts},
-    {key:'sayim',data:db.sayim||{},updated_at:ts},
-    {key:'talepListe',data:db.talepListe||[],updated_at:ts},
-    {key:'alimListe',data:db.alimListe||[],updated_at:ts},
-    {key:'nextIds',data:{nextId:db.nextId,nextHarId:db.nextHarId,nextDolapId:db.nextDolapId,nextOduncId:db.nextOduncId||1},updated_at:ts}
-  ],function(err){
-    if(err) toast('⚠️ Bulut kaydı BAŞARISIZ! İnternet bağlantınızı kontrol edin.',4500);
+  /* KRİTİK GÜVENLİK ADIMI: Bu fonksiyon programın HER YERİNDEN (talep, ödünç, hareket, dolap vb.)
+     çağrılıyor ve o an tarayıcının hafızasındaki TÜM ayarları (sayım dahil) buluta gönderiyor.
+     Eğer bir sekme uzun süre arka planda/güncellenmeden kalmışsa, o sekmenin BAYAT sayım verisi,
+     başka bir cihazda yapılmış YENİ sayımların üzerine yazabilir. Bunu önlemek için, göndermeden
+     hemen önce buluttaki GÜNCEL sayım verisini çekip zaman damgasına göre birleştiriyoruz -
+     hangi cihazdan kaydedilirse edilsin, sayım verisi ASLA geriye gitmez/kaybolmaz. */
+  sbGet('ayarlar', function(err0, rows){
+    if(!err0 && rows){
+      var sayimSatiri = rows.filter(function(r){return r.key==='sayim';})[0];
+      if(sayimSatiri && sayimSatiri.data){
+        db.sayim = sayimMergeAl(sayimSatiri.data, db.sayim||{});
+      }
+    }
+    sbUpsert('ayarlar',[
+      {key:'dolaplar',data:db.dolaplar,updated_at:ts},
+      {key:'hareketler',data:db.hareketler,updated_at:ts},
+      {key:'odunc',data:db.odunc||[],updated_at:ts},
+      {key:'sayim',data:db.sayim||{},updated_at:ts},
+      {key:'talepListe',data:db.talepListe||[],updated_at:ts},
+      {key:'alimListe',data:db.alimListe||[],updated_at:ts},
+      {key:'nextIds',data:{nextId:db.nextId,nextHarId:db.nextHarId,nextDolapId:db.nextDolapId,nextOduncId:db.nextOduncId||1},updated_at:ts}
+    ],function(err){
+      if(err) toast('⚠️ Bulut kaydı BAŞARISIZ! İnternet bağlantınızı kontrol edin.',4500);
+    });
   });
 }
 
