@@ -1071,6 +1071,7 @@ body.dark .rt td{color:var(--tx)}
         <div style="flex:3;min-width:240px;position:relative"><label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:3px">Malzeme / Ekipman (stoktan ara veya manuel yaz)</label>
           <input id="od-ad" autocomplete="off" oninput="oduncAra()" onfocus="oduncAra()" placeholder="Yazın: stoktan süzülür, listede yoksa manuel kalır" style="width:100%;height:34px;padding:0 9px;border:1px solid var(--brd);border-radius:var(--rsm);font-size:13px;font-family:inherit;outline:none;background:var(--sur)">
           <input type="hidden" id="od-sec">
+          <span id="od-demirbas-rozet" style="display:none;color:#dc2626;font-weight:700;font-size:11.5px;margin-top:3px">🏷 Demirbaş ürün seçildi</span>
           <div id="od-oneri" style="display:none;position:absolute;top:60px;left:0;right:0;background:var(--sur);border:1px solid var(--brd);border-radius:var(--rsm);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:50;max-height:240px;overflow-y:auto"></div></div>
         <div style="width:75px"><label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:3px">Adet</label>
           <input id="od-mik" type="number" min="1" value="1" style="width:100%;height:34px;padding:0 9px;border:1px solid var(--brd);border-radius:var(--rsm);font-size:13px;font-family:inherit;outline:none;background:var(--sur)"></div>
@@ -3890,7 +3891,8 @@ function qrParametreUygula(){
     var p=new URLSearchParams(window.location.search);
     var dolap=p.get('dolap');
     var raf=p.get('raf');
-    if(!dolap && !raf)return;
+    var ara=p.get('ara');
+    if(!dolap && !raf && !ara)return;
     /* Ürün listesi sayfasına geç */
     if(typeof showPage==='function')showPage('stok');
     if(dolap){
@@ -3902,8 +3904,12 @@ function qrParametreUygula(){
       var fb=document.getElementById('flt-b');
       if(fb){ for(var j=0;j<fb.options.length;j++){ if(fb.options[j].value===raf){fb.selectedIndex=j;break;} } }
     }
+    if(ara){
+      var sInp=document.getElementById('search');
+      if(sInp)sInp.value=ara;
+    }
     renderStok();
-    toast('📷 QR: '+(dolap||'')+(raf?(' / '+raf):'')+' gösteriliyor');
+    toast('📷 QR: '+(ara||dolap||'')+(raf?(' / '+raf):'')+' gösteriliyor');
     /* URL'yi temizle ki yenilemede tekrar tetiklenmesin */
     if(window.history && window.history.replaceState){
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -5034,10 +5040,11 @@ function demirbasRender(){
       +'<td>'+durumHtml+'</td>'
       +'<td style="text-align:center;white-space:nowrap">';
     if(kayit){
-      h+='<button class="btn btn-sm btn-p" onclick="oduncIadeEt('+kayit.id+');demirbasRender()" title="İade al">✅ İade</button>';
+      h+='<button class="btn btn-sm btn-p" onclick="oduncIadeEt('+kayit.id+');demirbasRender()" title="İade al">✅ İade</button> ';
     } else {
-      h+='<button class="btn btn-sm" onclick="demirbasVer('+u.id+')" title="Birine ver">📤 Ver</button>';
+      h+='<button class="btn btn-sm" onclick="demirbasVer('+u.id+')" title="Birine ver">📤 Ver</button> ';
     }
+    h+='<button class="btn btn-sm" onclick="demirbasEtiketYazdir('+u.id+')" title="Bu ürüne özel QR etiket yazdır">🏷 Etiket</button>';
     h+='</td></tr>';
   }
   tb.innerHTML=h;
@@ -5055,6 +5062,35 @@ function demirbasVer(urunId){
     if(sel.options[i].value==String(urunId)){ sel.selectedIndex=i; oduncStokSec(); break; }
   }
 }
+
+function demirbasEtiketYazdir(urunId){
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===urunId){u=db.urunler[i];break;}}
+  if(!u)return;
+  var base=qrAppBaseUrl();
+  /* Ürüne özel QR: dolap + raf bilgisiyle birlikte, ayrıca arama terimi olarak ürün adı da eklenir
+     ki okutan kişi doğrudan o ürünü görsün (aynı dolapta başka ürünler de olsa). */
+  var url=base+'?dolap='+encodeURIComponent(u.dolap||'')+(u.bolme?'&raf='+encodeURIComponent(u.bolme):'')+'&ara='+encodeURIComponent(u.ad);
+  var qrSvg=qrSvgUret(url,170);
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Demirbaş Etiketi - '+escTalep(u.ad)+'</title>'
+    +'<style>@page{margin:12mm}body{font-family:Arial,sans-serif;margin:0;padding:20px;display:flex;justify-content:center}'
+    +'.etk{border:3px solid #7c3aed;border-radius:14px;padding:20px 26px;text-align:center;width:260px;box-sizing:border-box}'
+    +'.etk-ust{background:#7c3aed;color:#fff;font-weight:800;font-size:15px;letter-spacing:1px;border-radius:8px;padding:6px 0;margin-bottom:12px}'
+    +'.etk-ad{font-weight:800;font-size:16px;margin-bottom:2px}'
+    +'.etk-yer{font-size:12px;color:#666;margin-bottom:14px}'
+    +'.etk svg{width:170px;height:170px}'
+    +'.etk-alt{font-size:10px;color:#999;margin-top:10px}'
+    +'</style></head><body><div class="etk">'
+    +'<div class="etk-ust">🏷 DEMİRBAŞ</div>'
+    +'<div class="etk-ad">'+escTalep(u.ad)+'</div>'
+    +'<div class="etk-yer">'+escTalep(u.dolap||'')+(u.bolme?' / '+escTalep(u.bolme):'')+'</div>'
+    +qrSvg
+    +'<div class="etk-alt">Kurum malıdır · Kamera ile okutun</div>'
+    +'</div></body></html>');
+  w.document.close();
+  setTimeout(function(){w.print();},400);
+}
+
 function demirbasPdf(){
   var list=db.urunler.filter(function(u){return u.demirbas;});
   if(!list.length){toast('Demirbaş işaretli ürün yok!');return;}
@@ -5621,6 +5657,7 @@ function oduncAra(){
   /* Kullanıcı yazınca stok bağlantısını sıfırla (manuel kabul et) */
   document.getElementById('od-sec').value='';
   document.getElementById('od-stokdus').checked=false;
+  var rozet0=document.getElementById('od-demirbas-rozet'); if(rozet0)rozet0.style.display='none';
   if(!q){box.style.display='none';return;}
   var bulunan=db.urunler.filter(function(u){
     var s=trkc(u.ad+' '+(u.marka||''));
@@ -5629,7 +5666,7 @@ function oduncAra(){
   if(bulunan.length===0){box.style.display='none';return;}
   var h='';
   bulunan.forEach(function(u){
-    var ad=e(u.ad)+(u.marka?' <span style="color:var(--tx3)">- '+e(u.marka)+'</span>':'');
+    var ad=e(u.ad)+(u.demirbas?' <span style="color:#dc2626;font-weight:700">(Demirbaş)</span>':'')+(u.marka?' <span style="color:var(--tx3)">- '+e(u.marka)+'</span>':'');
     var k=kalan(u);
     h+='<div onclick="oduncOneriSec('+u.id+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center;gap:8px" onmouseover="this.style.background=\'var(--sur2)\'" onmouseout="this.style.background=\'\'">'
       +'<span style="font-size:13px">'+ad+'</span>'
@@ -5682,6 +5719,7 @@ function oduncEkle(){
   document.getElementById('od-not').value='';
   document.getElementById('od-sec').value='';
   document.getElementById('od-stokdus').checked=false;
+  var rozet1=document.getElementById('od-demirbas-rozet'); if(rozet1)rozet1.style.display='none';
   renderStok();
   oduncRender();
   toast('✅ Ödünç kaydı eklendi');
