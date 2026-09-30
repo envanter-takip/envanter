@@ -5814,6 +5814,15 @@ function oduncGecKaldiMi(k){
   var it=new Date(k.iade+'T00:00:00');
   return it<bugun;
 }
+
+function oduncUrunDemirbasMi(k){
+  /* Ödünç kaydı stoktan bağlıysa (stokId), o ürünün demirbaş olup olmadığına bakar.
+     Manuel eklenmiş (stoksuz) kayıtlarda demirbaş bilgisi bilinmez, false döner. */
+  if(!k.stokId)return false;
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===k.stokId){u=db.urunler[i];break;}}
+  return !!(u && u.demirbas);
+}
+
 function oduncRender(){
   if(!db.odunc)db.odunc=[];
   /* Uyarı: geç kalanlar */
@@ -5842,7 +5851,7 @@ function oduncRender(){
       else if(gec)durumBadge='<span style="background:var(--red-bg);color:var(--red);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">⚠️ Gecikti</span>';
       else durumBadge='<span style="background:var(--amb-bg);color:var(--amb);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Kişide</span>';
       h+='<tr'+(gec?' style="background:var(--red-bg)"':'')+'>'
-        +'<td data-label="Malzeme" style="font-weight:600">'+e(k.ad)+(k.not?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(k.not)+'</div>':'')+'</td>'
+        +'<td data-label="Malzeme" style="font-weight:600">'+e(k.ad)+(oduncUrunDemirbasMi(k)?' <span style="color:#dc2626;font-weight:700">(Demirbaş)</span>':'')+(k.not?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(k.not)+'</div>':'')+'</td>'
         +'<td data-label="Adet" style="text-align:center">'+k.mik+'</td>'
         +'<td data-label="Kime">'+e(k.kisi)+'</td>'
         +'<td data-label="Veriliş" style="font-size:12px;color:var(--tx2)">'+(k.ver?new Date(k.ver).toLocaleDateString('tr-TR'):'—')+'</td>'
