@@ -289,6 +289,7 @@ body.dark .rt td{color:var(--tx)}
 
 /* ============ MOBİL UYUMLULUK ============ */
 @media (max-width: 860px){
+  #ana-iki-sutun{grid-template-columns:1fr !important}
   .app{display:block}
   #hamburger-btn{display:inline-flex !important;align-items:center;justify-content:center}
   .sb{
@@ -456,7 +457,8 @@ body.dark .rt td{color:var(--tx)}
 <aside class="sb" id="sb-aside">
   <div class="sb-logo"><h1>📦 Teknik Envanter</h1><p>Stok Takip Sistemi</p></div>
   <div class="sb-sec">Sayfalar</div>
-  <div class="sb-a on" onclick="showPage('stok')" id="nav-stok">📋 Ürün Listesi</div>
+  <div class="sb-a on" onclick="showPage('ana')" id="nav-ana">🏠 Ana Sayfa</div>
+  <div class="sb-a" onclick="showPage('stok')" id="nav-stok">📋 Ürün Listesi</div>
   <div class="sb-a" onclick="showPage('har')" id="nav-har">🔄 Hareket Geçmişi</div>
   <div class="sb-a" onclick="showPage('dolap')" id="nav-dolap">🗄 Dolap &amp; Bölme</div>
   <div class="sb-a" onclick="showPage('kullanici')" id="nav-ku" style="display:none">👥 Kullanıcılar</div>
@@ -497,8 +499,22 @@ body.dark .rt td{color:var(--tx)}
   </div>
   <div class="content">
 
+    <!-- ANA SAYFA -->
+    <div class="page on" id="page-ana">
+      <div id="ana-ozet-kartlar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="ana-iki-sutun">
+        <div style="background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:14px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:10px">🔔 Dikkat Gerektirenler</div>
+          <div id="ana-dikkat"></div>
+        </div>
+        <div style="background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:14px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:10px">🔄 Son Hareketler</div>
+          <div id="ana-son-hareket"></div>
+        </div>
+      </div>
+    </div>
     <!-- STOK -->
-    <div class="page on" id="page-stok">
+    <div class="page" id="page-stok">
       <div class="stats">
         <div class="stat"><div class="stat-l">Ürün Çeşidi</div><div class="stat-v" id="s-c">0</div><div class="stat-s">kayıtlı</div></div>
         <div class="stat"><div class="stat-l">Toplam Mevcut</div><div class="stat-v cb" id="s-m">0</div><div class="stat-s">birim</div></div>
@@ -654,7 +670,15 @@ body.dark .rt td{color:var(--tx)}
       <div class="f"><label>Barkod/SKU</label><input id="fu-sku" placeholder=""></div>
       <div class="f"><label>Tedarikçi</label><input id="fu-ted" placeholder=""></div>
     </div>
-    <div class="f" style="margin-bottom:10px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600"><input type="checkbox" id="fu-demirbas" style="width:16px;height:16px"> 🏷 Demirbaş Kaynaklı<span style="font-weight:400;color:var(--tx3);font-size:11.5px">(taşınırdan devralınan ürün)</span></label></div>
+    <div class="f" style="margin-bottom:10px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600"><input type="checkbox" id="fu-demirbas" onchange="fuDemirbasToggle()" style="width:16px;height:16px"> 🏷 Demirbaş Kaynaklı<span style="font-weight:400;color:var(--tx3);font-size:11.5px">(taşınırdan devralınan ürün)</span></label></div>
+    <div id="fu-garanti-alan" style="display:none;background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:11px 12px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:8px">🛡️ Garanti / Bakım Takibi (opsiyonel)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="f" style="flex:1;min-width:150px"><label style="font-size:11px">Garanti Bitiş Tarihi</label><input type="date" id="fu-garanti-tar" style="width:100%"></div>
+        <div class="f" style="flex:1;min-width:150px"><label style="font-size:11px">Sonraki Bakım Tarihi</label><input type="date" id="fu-bakim-tar" style="width:100%"></div>
+      </div>
+      <div class="fhint">Tarihler yaklaşınca Ana Sayfa'da uyarı çıkar.</div>
+    </div>
     <div class="f"><label>Notlar</label><textarea id="fu-not" placeholder=""></textarea></div>
   </div>
   <div class="mf"><button class="btn" onclick="CM('m-u')">İptal</button><button class="btn btn-p" onclick="saveUrun()">💾 Kaydet</button></div>
@@ -824,7 +848,7 @@ body.dark .rt td{color:var(--tx)}
     <p>Dolap &amp; Bölme sayfasında her dolabın <b>📱 QR</b> butonuyla, o dolap ve rafları için QR kod üretebilirsiniz. Etiketleri yazdırıp dolaplara/raflara yapıştırın. Telefon kameranızla okuttuğunuzda, o dolabın veya rafın ürünleri programda otomatik filtrelenmiş olarak açılır — sahada hızlı erişim sağlar.</p>
 
     <div style="font-weight:700;margin:16px 0 6px;color:var(--blu)">🏷 Demirbaş Ürünler</div>
-    <p>Taşınırdan devralınan demirbaş kaynaklı ürünleri işaretleyip (ürün düzenlemede "Demirbaş Kaynaklı" kutusu) takip edebilirsiniz. <b>Demirbaş Ürünler</b> ekranı (Listeler & İşlemler'de veya Raporlar'da) her demirbaşın <b>depoda mı yoksa kişide mi</b> olduğunu gösterir — kimde ne var, ne zamandır tek bakışta görünür. Bir demirbaşı birine vermek/geri almak, mevcut <b>Ödünç / Geçici Verilenler</b> sistemi üzerinden yapılır: iade tarihi girerseniz geçici, boş bırakırsanız süresiz (kalıcı zimmet) sayılır.</p>
+    <p>Taşınırdan devralınan demirbaş kaynaklı ürünleri işaretleyip (ürün düzenlemede "Demirbaş Kaynaklı" kutusu) takip edebilirsiniz. <b>Demirbaş Ürünler</b> ekranı (Listeler & İşlemler'de veya Raporlar'da) her demirbaşın <b>depoda mı yoksa kişide mi</b> olduğunu gösterir — kimde ne var, ne zamandır tek bakışta görünür. Bir demirbaşı birine vermek/geri almak, mevcut <b>Ödünç / Geçici Verilenler</b> sistemi üzerinden yapılır: iade tarihi girerseniz geçici, boş bırakırsanız süresiz (kalıcı zimmet) sayılır. <b>Kişilere Göre</b> görünümüyle kimin üzerinde hangi demirbaşlar olduğunu görüp, kişi başına imzalı <b>zimmet listesi</b> yazdırabilirsiniz.</p>
 
     <div style="font-weight:700;margin:16px 0 6px;color:var(--pur)">📈 Raporlar</div>
     <p>Tükenenler, kritik seviye, en çok kullanılanlar, dolap/kategori dağılımı, dönemsel hareketler, <b>hareketsiz (ölü) stok</b> ve genel özet raporlarını görürsünüz. Hareketsiz ürünler raporu, uzun süredir hiç çıkış görmeyen (rafta duran ama kullanılmayan) malzemeleri tespit eder. <b>Tarih aralığı</b> seçerek (bu ay, geçen ay, son 3 ay, bu yıl) dönemsel analiz yapabilir; raporları <b>grafiklerle</b> (çubuk/pasta) görüntüleyip Excel ve PDF olarak alabilirsiniz.</p>
@@ -914,6 +938,7 @@ body.dark .rt td{color:var(--tx)}
       <button class="btn rapor-tab" data-r="donemsel" onclick="raporGoster('donemsel')">📅 Dönemsel Hareket</button>
       <button class="btn rapor-tab" data-r="oludstok" onclick="raporGoster('oludstok')">💤 Hareketsiz Ürünler</button>
       <button class="btn rapor-tab" data-r="yinelenen" onclick="raporGoster('yinelenen')">🔁 Yinelenen Ürünler</button>
+      <button class="btn rapor-tab" data-r="tukenme" onclick="raporGoster('tukenme')">📉 Tükenme Tahmini</button>
       <button class="btn rapor-tab" onclick="CM('m-rapor');demirbasAc()">🏷 Demirbaş Ürünler</button>
       <button class="btn rapor-tab" data-r="ozet" onclick="raporGoster('ozet')">📋 Genel Özet</button>
     </div>
@@ -1225,6 +1250,12 @@ body.dark .rt td{color:var(--tx)}
       🏷 Taşınırdan devralınan demirbaş kaynaklı ürünler. Bir demirbaşı birine verirken/geri alırken <b>Ödünç / Geçici Verilenler</b> sistemi kullanılır — buradan hızlıca erişebilirsiniz. İade tarihi belirtmezseniz kayıt süresiz (kalıcı zimmet) olarak kalır.
     </div>
     <div id="demirbas-ozet" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-sm btn-p" id="dm-tab-liste" onclick="demirbasGorunumSec('liste')">📋 Tüm Liste</button>
+      <button class="btn btn-sm" id="dm-tab-kisi" onclick="demirbasGorunumSec('kisi')">👤 Kişilere Göre</button>
+    </div>
+    <div id="demirbas-kisi-gorunum" style="display:none"></div>
+    <div id="demirbas-liste-gorunum">
     <table class="rt">
       <thead><tr>
         <th>Ürün</th><th>Yeri</th><th style="text-align:center">Adet</th><th>Durum</th><th style="text-align:center">İşlem</th>
@@ -1232,6 +1263,7 @@ body.dark .rt td{color:var(--tx)}
       <tbody id="demirbas-tbody"></tbody>
     </table>
     <div id="demirbas-bos" style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">Demirbaş işaretli ürün yok.</div>
+    </div>
   </div>
   <div class="mf">
     <button class="btn" onclick="CM('m-demirbas')">Kapat</button>
@@ -3805,6 +3837,7 @@ function sbCanliYenile(){
         if(document.getElementById('m-odunc').classList.contains('on'))oduncRender();
         if(document.getElementById('m-sayim')&&document.getElementById('m-sayim').classList.contains('on'))sayimBaslat();
         if(document.getElementById('m-demirbas')&&document.getElementById('m-demirbas').classList.contains('on'))demirbasRender();
+        if(document.getElementById('page-ana')&&document.getElementById('page-ana').classList.contains('on'))renderAnaSayfa();
         updTalepBadge();
         if(document.getElementById('page-har').classList.contains('on'))renderHar();
         if(document.getElementById('page-dolap').classList.contains('on'))renderDolaplar();
@@ -3880,6 +3913,7 @@ function lgAc(usr){
   uRolUygula(usr.rol);
   logEkle('giris','Sisteme giris yapildi');
   renderStok(); updDBInfo();
+  renderAnaSayfa();
   updTalepBadge();
   setTimeout(function(){girisBildirim();},400);
   setTimeout(function(){qrParametreUygula();},300);
@@ -4479,6 +4513,13 @@ function selDur(tip){
 
 // ---- Ürün Modal ----
 let editUID=null;
+
+function fuDemirbasToggle(){
+  var gArea=document.getElementById('fu-garanti-alan');
+  var checked=document.getElementById('fu-demirbas').checked;
+  if(gArea)gArea.style.display=checked?'block':'none';
+}
+
 function openUrunModal(id=null){
   editUID=id;
   fillDolapSel('fu-dolap','');
@@ -4499,6 +4540,9 @@ function openUrunModal(id=null){
     document.getElementById('fu-ted').value=u.tedarik||'';
     document.getElementById('fu-not').value=u.not||'';
     document.getElementById('fu-demirbas').checked=!!u.demirbas;
+    document.getElementById('fu-garanti-tar').value=u.garantiTarihi||'';
+    document.getElementById('fu-bakim-tar').value=u.bakimTarihi||'';
+    fuDemirbasToggle();
     selDur(u.durum_tip||'normal');
     /* Mevcut ürünlerde stok alanları kilitlenir: değişiklik sadece Stok Hareketi'nden yapılmalı,
        böylece hareket geçmişi ve envanter sayımı tutarlı kalır. */
@@ -4516,6 +4560,9 @@ function openUrunModal(id=null){
     document.getElementById('fu-dolap').value='';
     document.getElementById('fu-bolme').innerHTML='<option value="">— Dolap seçin —</option>';
     document.getElementById('fu-demirbas').checked=false;
+    document.getElementById('fu-garanti-tar').value='';
+    document.getElementById('fu-bakim-tar').value='';
+    fuDemirbasToggle();
     selDur('normal');
     /* Yeni ürün: ilk stok girişi elle yapılabilir (henüz hareket geçmişi yok) */
     document.getElementById('fu-mevcut').readOnly=false;
@@ -4562,6 +4609,8 @@ function saveUrun(){
     not:document.getElementById('fu-not').value.trim(),
     durum_tip:secilenDur,
     demirbas:document.getElementById('fu-demirbas').checked,
+    garantiTarihi:document.getElementById('fu-garanti-tar').value||'',
+    bakimTarihi:document.getElementById('fu-bakim-tar').value||'',
   };
   var kayitId;
   if(editUID){
@@ -4860,6 +4909,78 @@ function handleJSON(ev){
 }
 
 // ---- Page nav ----
+
+function renderAnaSayfa(){
+  if(!db||!db.urunler)return;
+  /* --- Özet kartları --- */
+  var kritikSay=0, tukenenSay=0;
+  db.urunler.forEach(function(u){var d=durum(u); if(d.k==='low')kritikSay++; else if(d.k==='out')tukenenSay++;});
+  var bekleyenTalep=(db.talepListe||[]).filter(function(t){return t.durum!=='karsilandi';}).length;
+  var odunctekiler=(db.odunc||[]).filter(function(k){return k.durum==='kiside';});
+  var gecikenOdunc=odunctekiler.filter(oduncGecKaldiMi).length;
+  var sayimAdetleri=Object.keys(db.sayim||{}).length;
+  /* Garanti/bakım tarihi 30 gün içinde dolan/geçmiş demirbaşlar */
+  var simdiG=Date.now(); var esik30=30*24*60*60*1000;
+  var garantiUyari=db.urunler.filter(function(u){
+    if(!u.demirbas)return false;
+    var tg=u.garantiTarihi?new Date(u.garantiTarihi+'T00:00:00').getTime():null;
+    var tb=u.bakimTarihi?new Date(u.bakimTarihi+'T00:00:00').getTime():null;
+    return (tg && (tg-simdiG)<=esik30) || (tb && (tb-simdiG)<=esik30);
+  });
+
+  var kartlar='';
+  kartlar+=anaKart('🔴 Kritik Stok',kritikSay,'var(--amb)',"showPage('stok');document.getElementById('flt-dur').value='low';renderStok();");
+  kartlar+=anaKart('⚫ Tükenen',tukenenSay,'var(--red)',"showPage('stok');document.getElementById('flt-dur').value='out';renderStok();");
+  kartlar+=anaKart('📝 Bekleyen Talep',bekleyenTalep,bekleyenTalep>0?'var(--blu)':'var(--tx2)',"talepAc();");
+  kartlar+=anaKart('🔄 Kişideki Ödünç',odunctekiler.length,'var(--tx2)',"oduncAc();")
+  if(gecikenOdunc>0)kartlar+=anaKart('⚠️ Geciken İade',gecikenOdunc,'var(--red)',"oduncAc();");
+  if(sayimAdetleri>0)kartlar+=anaKart('🔢 Devam Eden Sayım',sayimAdetleri+' ürün','var(--pur,#7c3aed)',"sayimAc();");
+  if(garantiUyari.length>0)kartlar+=anaKart('🛡️ Garanti/Bakım Yaklaşan',garantiUyari.length,'var(--amb)',"demirbasAc();");
+  document.getElementById('ana-ozet-kartlar').innerHTML=kartlar;
+
+  /* --- Dikkat gerektirenler listesi (ilk birkaç kritik/tükenen ürün) --- */
+  var dikkatListe=db.urunler.filter(function(u){var d=durum(u);return d.k==='low'||d.k==='out';})
+    .sort(function(a,b){return kalan(a)-kalan(b);}).slice(0,6);
+  var dh='';
+  if(!dikkatListe.length){
+    dh='<div style="color:var(--grn);font-size:13px;padding:8px 0">✓ Kritik veya tükenen ürün yok</div>';
+  } else {
+    dikkatListe.forEach(function(u){
+      var d=durum(u);
+      dh+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--brd);font-size:13px">'
+        +'<span>'+e(u.ad)+'</span>'
+        +'<span class="pill '+d.c+'" style="font-size:11px">'+d.l+' ('+kalan(u)+')</span>'
+        +'</div>';
+    });
+  }
+  document.getElementById('ana-dikkat').innerHTML=dh;
+
+  /* --- Son hareketler (en yeni 6) --- */
+  var sonlar=[...(db.hareketler||[])].sort(function(a,b){return b.ts-a.ts;}).slice(0,6);
+  var sh='';
+  if(!sonlar.length){
+    sh='<div style="color:var(--tx3);font-size:13px;padding:8px 0">Henüz hareket yok</div>';
+  } else {
+    sonlar.forEach(function(h){
+      var u=db.urunler.find(function(x){return x.id===h.urunId;});
+      var uA=u?u.ad:(h.urunAdiSnapshot||('#'+h.urunId));
+      var ikon=h.tip==='cikan'?'📤':h.tip==='giris'?'📥':h.tip==='hurda'?'🗑':h.tip==='duzenlendi'?'✏️':h.tip==='silindi'?'❌':'🔧';
+      var dt=new Date(h.ts);
+      var ds=dt.toLocaleDateString('tr-TR')+' '+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+      sh+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--brd);font-size:13px">'
+        +'<span>'+ikon+' '+e(uA)+'</span>'
+        +'<span style="color:var(--tx3);font-size:11.5px">'+ds+'</span>'
+        +'</div>';
+    });
+  }
+  document.getElementById('ana-son-hareket').innerHTML=sh;
+}
+function anaKart(baslik,deger,renk,onclick){
+  return '<div onclick="'+onclick.replace(/"/g,'&quot;')+'" style="cursor:pointer;background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:14px;text-align:center;transition:transform .1s" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'\'">'
+    +'<div style="font-size:26px;font-weight:800;color:'+renk+'">'+deger+'</div>'
+    +'<div style="font-size:12px;color:var(--tx3);margin-top:3px">'+baslik+'</div></div>';
+}
+
 function showPage(n){
   if(window.innerWidth<=860)sbKapat();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
@@ -4869,11 +4990,12 @@ function showPage(n){
   var ni=document.getElementById('nav-'+n);if(ni)ni.classList.add('on');
   /* kullanici sayfasi nav-ku id'sini kullanir */
   if(n==='kullanici'){var nk=document.getElementById('nav-ku');if(nk)nk.classList.add('on');}
-  var tl={stok:'Ürün Listesi',har:'Hareket Geçmişi',dolap:'Dolap & Bölme Yönetimi',kullanici:'Kullanıcı Yönetimi'};
+  var tl={ana:'Ana Sayfa',stok:'Ürün Listesi',har:'Hareket Geçmişi',dolap:'Dolap & Bölme Yönetimi',kullanici:'Kullanıcı Yönetimi'};
   var pt=document.getElementById('page-title');if(pt)pt.textContent=tl[n]||'';
   var by=document.getElementById('btn-yeni');if(by)by.style.display=n==='stok'?'':'none';
   try{
-    if(n==='har')renderHar();
+    if(n==='ana')renderAnaSayfa();
+    else if(n==='har')renderHar();
     else if(n==='dolap')renderDolaplar();
     else if(n==='kullanici')renderKullanicilar();
   }catch(err){ console.log('Sayfa render hatasi:',err); alert('Hata: '+err.message); }
@@ -4995,6 +5117,7 @@ function updTalepBadge(){
 
 /* === DEMİRBAŞ ÜRÜNLER (Ödünç sistemiyle birleşik görünüm) === */
 function demirbasAc(){
+  demirbasGorunum='liste';
   demirbasRender();
   OM('m-demirbas');
 }
@@ -5006,7 +5129,78 @@ function demirbasKimde(urunId){
   eslesen.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
   return eslesen[0];
 }
+
+var demirbasGorunum='liste';
+var demirbasKisiListesi=[];
+function demirbasGorunumSec(g){demirbasGorunum=g;demirbasRender();}
+function demirbasGorunumUygula(){
+  var l=document.getElementById('demirbas-liste-gorunum'), k=document.getElementById('demirbas-kisi-gorunum');
+  if(!l||!k)return;
+  l.style.display=demirbasGorunum==='liste'?'block':'none';
+  k.style.display=demirbasGorunum==='kisi'?'block':'none';
+  var b1=document.getElementById('dm-tab-liste'), b2=document.getElementById('dm-tab-kisi');
+  if(b1)b1.className='btn btn-sm'+(demirbasGorunum==='liste'?' btn-p':'');
+  if(b2)b2.className='btn btn-sm'+(demirbasGorunum==='kisi'?' btn-p':'');
+  if(demirbasGorunum==='kisi')demirbasKisiRender();
+}
+function demirbasKisiGrupla(){
+  /* Şu an kişide olan DEMİRBAŞ ödünç kayıtlarını, kişiye göre gruplar (Ali/ali aynı kişi sayılır) */
+  var grup={}, sira=[];
+  (db.odunc||[]).forEach(function(k){
+    if(k.durum!=='kiside'||!oduncUrunDemirbasMi(k))return;
+    var anahtar=trkc((k.kisi||'').trim());
+    if(!grup[anahtar]){grup[anahtar]={kisi:k.kisi,kayitlar:[]};sira.push(anahtar);}
+    grup[anahtar].kayitlar.push(k);
+  });
+  return sira.map(function(a){return grup[a];}).sort(function(a,b){return (a.kisi||'').localeCompare(b.kisi||'','tr');});
+}
+function demirbasKisiRender(){
+  var box=document.getElementById('demirbas-kisi-gorunum'); if(!box)return;
+  demirbasKisiListesi=demirbasKisiGrupla();
+  if(!demirbasKisiListesi.length){
+    box.innerHTML='<div style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">Şu an kimsenin üzerinde demirbaş yok.</div>';
+    return;
+  }
+  var h='';
+  demirbasKisiListesi.forEach(function(g,i){
+    h+='<div style="background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:12px 14px;margin-bottom:12px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
+      +'<div style="font-weight:700;font-size:14px">👤 '+e(g.kisi)+' <span style="font-weight:400;color:var(--tx3);font-size:12px">— '+g.kayitlar.length+' kalem</span></div>'
+      +'<button class="btn btn-sm" onclick="demirbasZimmetYazdir('+i+')">🖨 Zimmet Listesi</button></div>';
+    g.kayitlar.forEach(function(k){
+      var ver=k.ver?new Date(k.ver).toLocaleDateString('tr-TR'):'—';
+      var iade=k.iade?('iade: '+new Date(k.iade).toLocaleDateString('tr-TR')):'süresiz';
+      var gec=oduncGecKaldiMi(k);
+      h+='<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--brd);font-size:13px">'
+        +'<span>'+e(k.ad)+(k.mik>1?' ×'+k.mik:'')+'</span>'
+        +'<span style="color:'+(gec?'var(--red)':'var(--tx3)')+';font-size:12px;white-space:nowrap">'+ver+' · '+iade+(gec?' ⚠️':'')+'</span></div>';
+    });
+    h+='</div>';
+  });
+  box.innerHTML=h;
+}
+function demirbasZimmetYazdir(i){
+  var g=demirbasKisiListesi[i]; if(!g)return;
+  var satir='';
+  g.kayitlar.forEach(function(k,n){
+    satir+='<tr><td style="text-align:center">'+(n+1)+'</td><td>'+escTalep(k.ad)+'</td><td style="text-align:center">'+k.mik+'</td>'
+      +'<td style="text-align:center">'+(k.ver?new Date(k.ver).toLocaleDateString('tr-TR'):'-')+'</td>'
+      +'<td style="text-align:center">'+(k.iade?new Date(k.iade).toLocaleDateString('tr-TR'):'Süresiz')+'</td>'
+      +'<td>'+escTalep(k.not||'')+'</td></tr>';
+  });
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Zimmet Listesi - '+escTalep(g.kisi)+'</title>'
+    +'<style>body{font-family:Arial,sans-serif;padding:34px;color:#1a1a18}h1{text-align:center;font-size:20px;margin:0 0 4px}.alt{text-align:center;color:#777;font-size:12px;margin-bottom:22px}table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#7c3aed;color:#fff;padding:8px 9px;text-align:left}td{padding:7px 9px;border-bottom:1px solid #e0e0dc}.imza{display:flex;justify-content:space-around;margin-top:70px}.imza div{text-align:center;font-size:13px;width:200px}.cizgi{border-top:1px solid #333;margin-bottom:6px}.foot{margin-top:30px;text-align:center;font-size:10px;color:#aaa}</style></head><body>'
+    +'<h1>DEMİRBAŞ ZİMMET LİSTESİ</h1><div class="alt"><b>'+escTalep(g.kisi)+'</b> &middot; '+new Date().toLocaleDateString('tr-TR')+' &middot; '+g.kayitlar.length+' kalem</div>'
+    +'<table><thead><tr><th>Sıra</th><th>Demirbaş</th><th>Adet</th><th>Veriliş</th><th>İade</th><th>Not</th></tr></thead><tbody>'+satir+'</tbody></table>'
+    +'<div class="imza"><div><div class="cizgi"></div>Teslim Eden</div><div><div class="cizgi"></div>Teslim Alan<br>('+escTalep(g.kisi)+')</div></div>'
+    +'<div class="foot">Teknik Envanter Stok Takip Sistemi</div></body></html>');
+  w.document.close();
+  setTimeout(function(){w.print();},400);
+}
+
 function demirbasRender(){
+  demirbasGorunumUygula();
   var list=db.urunler.filter(function(u){return u.demirbas;});
   var tb=document.getElementById('demirbas-tbody');
   var bos=document.getElementById('demirbas-bos');
@@ -5033,11 +5227,29 @@ function demirbasRender(){
       depoda++;
       durumHtml='<span style="color:var(--grn);font-weight:700">📦 Depoda</span>';
     }
+    /* Garanti/bakım tarihi yaklaşan/geçmiş mi? */
+    var garBakHtml='<span style="color:var(--tx3);font-size:11.5px">—</span>';
+    if(u.garantiTarihi||u.bakimTarihi){
+      var simdiGB=Date.now(); var esik30GB=30*24*60*60*1000;
+      var parcalar=[];
+      if(u.garantiTarihi){
+        var tG=new Date(u.garantiTarihi+'T00:00:00').getTime();
+        var renkG=tG<simdiGB?'var(--red)':(tG-simdiGB)<=esik30GB?'var(--amb)':'var(--tx2)';
+        parcalar.push('<div style="color:'+renkG+'">🛡 Garanti: '+new Date(u.garantiTarihi).toLocaleDateString('tr-TR')+(tG<simdiGB?' (doldu)':'')+'</div>');
+      }
+      if(u.bakimTarihi){
+        var tB=new Date(u.bakimTarihi+'T00:00:00').getTime();
+        var renkB=tB<simdiGB?'var(--red)':(tB-simdiGB)<=esik30GB?'var(--amb)':'var(--tx2)';
+        parcalar.push('<div style="color:'+renkB+'">🔧 Bakım: '+new Date(u.bakimTarihi).toLocaleDateString('tr-TR')+(tB<simdiGB?' (geçti)':'')+'</div>');
+      }
+      garBakHtml='<div style="font-size:11.5px">'+parcalar.join('')+'</div>';
+    }
     h+='<tr>'
       +'<td style="font-weight:600">'+e(u.ad)+(u.marka?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(u.marka)+'</div>':'')+'</td>'
       +'<td style="font-size:12px;color:var(--tx2)">'+e(u.dolap||'—')+(u.bolme?' / '+e(u.bolme):'')+'</td>'
       +'<td style="text-align:center">'+kalan(u)+' '+e(u.birim||'')+'</td>'
       +'<td>'+durumHtml+'</td>'
+      +'<td>'+garBakHtml+'</td>'
       +'<td style="text-align:center;white-space:nowrap">';
     if(kayit){
       h+='<button class="btn btn-sm btn-p" onclick="oduncIadeEt('+kayit.id+');demirbasRender()" title="İade al">✅ İade</button> ';
@@ -6399,6 +6611,46 @@ var pastaK=Object.keys(grup).sort().map(function(k){return {ad:k,deger:grup[k].a
         h+='</tbody></table></div>';
       });
     }
+  } else if(tip==='tukenme'){
+    bas.textContent='📉 Tükenme Tahmini';
+    alt.textContent='Son 90 günlük çıkış hızına göre, mevcut stoğun ne zaman biteceği tahmini';
+    var gunPencere=90;
+    var simdi2=Date.now();
+    var esikMs2=gunPencere*24*60*60*1000;
+    var tuketim={};
+    db.hareketler.forEach(function(hr){
+      if(hr.tip==='cikan' && (simdi2-(hr.ts||0))<=esikMs2){
+        tuketim[hr.urunId]=(tuketim[hr.urunId]||0)+hr.miktar;
+      }
+    });
+    var tahminler=[];
+    db.urunler.forEach(function(u){
+      var d=durum(u);
+      if(d.k==='hurda')return; /* hurdaya ayrılanlar tahmine girmez */
+      var toplamCikis=tuketim[u.id]||0;
+      if(toplamCikis<=0)return; /* hiç çıkış yoksa tahmin yapılamaz */
+      var gunlukHiz=toplamCikis/gunPencere;
+      var kalanMik=kalan(u);
+      if(kalanMik<=0)return; /* zaten tükenmiş, ayrı raporda zaten görünüyor */
+      var kalanGun=Math.round(kalanMik/gunlukHiz);
+      tahminler.push({u:u,kalanGun:kalanGun,gunlukHiz:gunlukHiz,kalanMik:kalanMik});
+    });
+    tahminler.sort(function(a,b){return a.kalanGun-b.kalanGun;});
+    h='<div style="background:var(--sur2);border:1px solid var(--brd);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--tx2)">'
+      +'📉 Son 90 günde en az bir çıkışı olan <b>'+tahminler.length+'</b> ürün için tahmini tükenme süresi hesaplandı. Yakında tükenecekler üstte.</div>';
+    h+='<table class="rt"><thead><tr><th>Ürün</th><th>Yeri</th><th style="text-align:center">Kalan</th><th style="text-align:center">Günlük Ort. Kullanım</th><th style="text-align:center">Tahmini Tükenme</th></tr></thead><tbody>';
+    if(tahminler.length===0)h+='<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:20px">Son 90 günde yeterli çıkış hareketi yok (tahmin için veri gerekli)</td></tr>';
+    for(var ti=0;ti<tahminler.length;ti++){
+      var t=tahminler[ti];
+      var renk=t.kalanGun<=7?'var(--red)':t.kalanGun<=21?'var(--amb)':'var(--tx2)';
+      var sureMetin=t.kalanGun<=0?'Bugün/Yarın':(t.kalanGun+' gün sonra');
+      h+='<tr><td style="font-weight:600">'+e(t.u.ad)+(t.u.marka?'<div style="font-size:11px;color:var(--tx3);font-weight:400">'+e(t.u.marka)+'</div>':'')+'</td>'
+        +'<td style="font-size:12px;color:var(--tx2)">'+e(t.u.dolap||'—')+(t.u.bolme?' / '+e(t.u.bolme):'')+'</td>'
+        +'<td style="text-align:center;font-weight:700">'+t.kalanMik+' '+e(t.u.birim||'')+'</td>'
+        +'<td style="text-align:center">'+t.gunlukHiz.toFixed(2)+' '+e(t.u.birim||'')+'/gün</td>'
+        +'<td style="text-align:center;font-weight:700;color:'+renk+'">'+sureMetin+'</td></tr>';
+    }
+    h+='</tbody></table>';
   } else if(tip==='ozet'){
     bas.textContent='📋 Genel Özet';
     alt.textContent='Envanterin genel durumu';
