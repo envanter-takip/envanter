@@ -644,6 +644,7 @@ body.dark .rt td{color:var(--tx)}
     </div>
     <div id="fu-stok-uyari" style="display:none;background:var(--amb-bg);border:1px solid var(--brd);border-radius:var(--r);padding:9px 12px;margin:-6px 0 12px;font-size:12px;color:var(--tx2)">
       🔒 Stok miktarını değiştirmek için <b>Stok Hareketi</b> kullanın (buradan değiştirmeyin) — böylece hareket geçmişi ve sayım kayıtları doğru kalır.
+      <button class="btn btn-sm btn-p" onclick="stokDuzeltAc()" style="margin-left:6px" title="Yanlış girilen adedi doğru değerle düzeltir">🔧 Stoğu Düzelt</button>
       <button class="btn btn-sm" onclick="CM('m-u');openHarModal(editUID)" style="margin-left:6px">📤 Stok Hareketi Aç</button>
     </div>
     <div class="sec">Stok Durumu</div>
@@ -4459,7 +4460,7 @@ function renderHar(){
       '<td data-label="Açıklama" style="color:var(--tx2)">'+e(h.aciklama||'—')+'</td>'+
       '<td data-label="Yapan" style="color:var(--tx2)">'+e(h.yapan||'—')+'</td>'+
       '<td class="mob-acts"><div class="td-acts">'+
-        (h.tip==='duzenlendi'||h.tip==='silindi'?'':'<button class="btn btn-sm btn-warn" onclick="openHarEdit('+h.id+')" title="Düzenle">✏️</button>')+
+        (h.tip==='duzenlendi'||h.tip==='silindi'||h.tip==='hurda'?'':'<button class="btn btn-sm btn-warn" onclick="openHarEdit('+h.id+')" title="Düzenle">✏️</button>')+
         '<button class="btn btn-sm btn-del" onclick="konfirmSilHar('+h.id+')" title="Sil">🗑</button>'+
       '</div></td></tr>';
   }).join('');
@@ -4721,6 +4722,19 @@ function hfUrunDegisti(){
   }
 }
 
+
+function stokDuzeltAc(){
+  /* Ürün Düzenle'den: Stok Hareketi'ni 'Düzeltme' tipinde, mevcut adedi önceden doldurarak açar. */
+  var id=editUID; if(!id)return;
+  var u=db.urunler.find(function(x){return x.id===id;}); if(!u)return;
+  CM('m-u');
+  openHarModal(id);
+  sHT('duzeltme');
+  document.getElementById('hf-mik').value=kalan(u);
+  document.getElementById('hf-ac').value='Stok düzeltmesi';
+  document.getElementById('hf-mik').focus();
+}
+
 function openHarModal(uid=null){
   const sel=document.getElementById('hf-u');
   const sorted=[...db.dolaplar].sort((a,b)=>(a.sira||0)-(b.sira||0));
@@ -4782,9 +4796,11 @@ function saveHarEdit(){
   if(u)sbUrunKaydetTek(u.id);sbAyarKaydet();CM('m-he');renderHar();renderStok();toast('✅ Hareket güncellendi');
 }
 function konfirmSilHar(id){
-  konfirm('Hareketi Sil','Bu hareket silinecek ve stok etkisi geri alınacak.','🗑 Sil',()=>{
+  const h0=db.hareketler.find(x=>x.id===id);
+  const silMesaj=(h0&&h0.tip==='duzeltme')?'Bu düzeltme kaydı silinecek. Düzeltmenin stok etkisi geri ALINMAZ (stok şu anki haliyle kalır).':'Bu hareket silinecek ve stok etkisi geri alınacak.';
+  konfirm('Hareketi Sil',silMesaj,'🗑 Sil',()=>{
     const h=db.hareketler.find(x=>x.id===id);const u=db.urunler.find(x=>x.id===h.urunId);
-    if(u){if(h.tip==='cikan')u.cikan=Math.max(0,(u.cikan||0)-h.miktar);else if(h.tip==='giris')u.mevcut=Math.max(0,u.mevcut-h.miktar);}
+    if(u){if(h.tip==='cikan')u.cikan=Math.max(0,(u.cikan||0)-h.miktar);else if(h.tip==='hurda'){u.cikan=Math.max(0,(u.cikan||0)-h.miktar);if(u.durum_tip==='hurda')u.durum_tip='normal';}else if(h.tip==='giris')u.mevcut=Math.max(0,u.mevcut-h.miktar);}
     db.hareketler=db.hareketler.filter(x=>x.id!==id);try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}if(u)sbUrunKaydetTek(u.id);sbAyarKaydet();renderHar();renderStok();toast('🗑 Hareket silindi');
   });
 }
@@ -4929,6 +4945,7 @@ function renderAnaSayfa(){
   });
 
   var kartlar='';
+  kartlar+=anaKartYesil('📋 Mevcut Ürünler',db.urunler.length,"showPage('stok');document.getElementById('flt-dur').value='';renderStok();");
   kartlar+=anaKart('🔴 Kritik Stok',kritikSay,'var(--amb)',"showPage('stok');document.getElementById('flt-dur').value='low';renderStok();");
   kartlar+=anaKart('⚫ Tükenen',tukenenSay,'var(--red)',"showPage('stok');document.getElementById('flt-dur').value='out';renderStok();");
   kartlar+=anaKart('📝 Bekleyen Talep',bekleyenTalep,bekleyenTalep>0?'var(--blu)':'var(--tx2)',"talepAc();");
@@ -4974,6 +4991,11 @@ function renderAnaSayfa(){
     });
   }
   document.getElementById('ana-son-hareket').innerHTML=sh;
+}
+function anaKartYesil(baslik,deger,onclick){
+  return '<div onclick="'+onclick.replace(/"/g,'&quot;')+'" style="cursor:pointer;background:var(--grn);color:#fff;border:1px solid var(--grn);border-radius:var(--r);padding:14px;text-align:center;transition:transform .1s" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'\'">'
+    +'<div style="font-size:26px;font-weight:800;color:#fff">'+deger+'</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.92);margin-top:3px">'+baslik+'</div></div>';
 }
 function anaKart(baslik,deger,renk,onclick){
   return '<div onclick="'+onclick.replace(/"/g,'&quot;')+'" style="cursor:pointer;background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:14px;text-align:center;transition:transform .1s" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'\'">'
@@ -5158,7 +5180,7 @@ function demirbasKisiRender(){
   var box=document.getElementById('demirbas-kisi-gorunum'); if(!box)return;
   demirbasKisiListesi=demirbasKisiGrupla();
   if(!demirbasKisiListesi.length){
-    box.innerHTML='<div style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">Şu an kimsenin üzerinde demirbaş yok.</div>';
+    box.innerHTML='<div style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">Şu an kimsenin üzerinde demirbaş yok.<br>Bir demirbaşı <b>Tüm Liste</b> sekmesindeki <b>📤 Ver</b> ile (veya Ödünç ekranından) birine verdiğinizde burada kişi adıyla listelenir ve zimmet listesi yazdırılabilir.</div>';
     return;
   }
   var h='';
