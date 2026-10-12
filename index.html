@@ -4934,7 +4934,9 @@ function renderAnaSayfa(){
   var bekleyenTalep=(db.talepListe||[]).filter(function(t){return t.durum!=='karsilandi';}).length;
   var odunctekiler=(db.odunc||[]).filter(function(k){return k.durum==='kiside';});
   var gecikenOdunc=odunctekiler.filter(oduncGecKaldiMi).length;
-  var sayimAdetleri=Object.keys(db.sayim||{}).length;
+  var urunIdSet={}; db.urunler.forEach(function(u){urunIdSet[u.id]=1;});
+  /* Silinmiş ürünlere ait artık sayım kayıtları sayılmaz */
+  var sayimAdetleri=Object.keys(db.sayim||{}).filter(function(k){return urunIdSet[k];}).length;
   /* Garanti/bakım tarihi 30 gün içinde dolan/geçmiş demirbaşlar */
   var simdiG=Date.now(); var esik30=30*24*60*60*1000;
   var garantiUyari=db.urunler.filter(function(u){
@@ -4951,7 +4953,7 @@ function renderAnaSayfa(){
   kartlar+=anaKart('📝 Bekleyen Talep',bekleyenTalep,bekleyenTalep>0?'var(--blu)':'var(--tx2)',"talepAc();");
   kartlar+=anaKart('🔄 Kişideki Ödünç',odunctekiler.length,'var(--tx2)',"oduncAc();")
   if(gecikenOdunc>0)kartlar+=anaKart('⚠️ Geciken İade',gecikenOdunc,'var(--red)',"oduncAc();");
-  if(sayimAdetleri>0)kartlar+=anaKart('🔢 Devam Eden Sayım',sayimAdetleri+' ürün','var(--pur,#7c3aed)',"sayimAc();");
+  if(sayimAdetleri>0)kartlar+=anaKart('🔢 Devam Eden Sayım',sayimAdetleri+' / '+db.urunler.length,'var(--pur,#7c3aed)',"sayimAc();");
   if(garantiUyari.length>0)kartlar+=anaKart('🛡️ Garanti/Bakım Yaklaşan',garantiUyari.length,'var(--amb)',"demirbasAc();");
   document.getElementById('ana-ozet-kartlar').innerHTML=kartlar;
 
